@@ -1,0 +1,52 @@
+version: "3.7"
+services:
+  robot-1:
+    build:
+      context: .
+    ports:
+      - "3001:3001"
+    networks:
+      - overlay
+    environment:
+      - PORT=3001
+      - NAME=robot 1
+      - SEED=FVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
+  
+  energy-1:
+    build:
+      context: .
+    ports:
+      - "3002:3002"
+    networks:
+      - overlay
+    environment:
+      - PORT=3002
+      - NAME=wind energy
+      - SEED=AVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
+  
+  robot-2:
+    build:
+      context: .
+    ports:
+      - "3003:3003"
+    networks:
+      - overlay
+    environment:
+      - PORT=3003
+      - NAME=robot 2
+      - SEED=BVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
+  
+  energy-2:
+    build:
+      context: .
+    ports:
+      - "3004:3004"
+    networks:
+      - overlay
+    environment:
+      - PORT=3004
+      - NAME=solar energy
+      - SEED=CVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
+
+networks:
+  overlay:
