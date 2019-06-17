@@ -4,6 +4,7 @@ var io = require('socket.io');
 var server = require('http').createServer(app);
 var allowedOrigins = "http://localhost:* http://127.0.0.1:*";
 var socket_path = '/socket'; // you need this if you want to connect to something other than the default socket.io path
+var cors = require('cors')
 
 let zmq = require('zeromq')
 let sock = zmq.socket('sub')
@@ -41,8 +42,69 @@ const account = createAccount({
 });
 console.log("account", account)
 
+app.use(cors())
+
 
 app.get('/', (req, res) => res.send(`I AM ${NAME}`))
+
+app.post('/orders', function (request, response) {
+    console.log("request");
+    //var query1 = request.body.var1;
+    let data = {
+        name: "headphone"
+    }
+
+    console.log('a user ordered', data);
+    account.generateCDA({
+        timeoutAt: Math.floor(new Date('7-16-2186').getTime() / 1000), // Date in seconds
+        expectedAmount: 1000,
+        security: 2
+    })
+        .then(cda => {
+            // Do something with the CDA
+            console.log(JSON.stringify(cda, null, 1));
+            let order = {
+                payment_cda: cda,
+                name: NAME,
+                status: "waiting for payment",
+                message: 'Thank you for the order. Please transfer 1000 IOTA to this address.'
+            }
+            sio_server.emit('orders', order);
+            let address = cda.address;
+            console.log("address", address)
+
+            
+            
+            // TODO: WATCH ADDRESS AND EMIT TO "ORDERS"
+            watchAddressOnNode(address);
+
+            response.send(address)
+            
+
+        })
+        .catch(error => {
+            // Handle errors here
+            console.log(error);
+        })
+});
+
+const watchAddressOnNode = function (address) {
+    console.log("watchAddressOnNode")
+    sock.subscribe('tx')
+    sock.on('message', msg => {
+        const data = msg.toString().split(' ') // Split to get topic & data
+
+        if (data[0] == 'tx' && address.includes(data[2])) {
+            console.log("tx on watched address", data[2])
+            sio_server.emit('tx_income', "wait for confirmation");
+            // TODO: check if transaction is confirmed and send information
+
+        }
+    })
+
+}
+
+
 
 sio_server.on('connection', function (socket) {
     console.log('a user connected');
