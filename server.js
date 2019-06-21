@@ -15,6 +15,8 @@ sock.connect('tcp://zmq.devnet.iota.org:5556')
 const dotenv = require('dotenv');
 dotenv.config();
 
+const iotaLibrary = require('@iota/core')
+
 const PORT = process.env.PORT
 const NAME = process.env.NAME
 
@@ -35,6 +37,10 @@ console.log("seed", SEED)
 
 // Local node to connect to;
 const provider = 'https://nodes.devnet.thetangle.org:443';
+
+const iota = iotaLibrary.composeAPI({
+    provider: provider
+})
 
 const account = createAccount({
     seed: Converter.trits(SEED),
@@ -88,6 +94,41 @@ app.post('/orders', function (request, response) {
         })
 });
 
+var counter = 0;
+
+var watched_tx = '';
+
+var checkTransactionConfirmation = function(tx) {
+    console.log("jetzt=", tx)
+    watched_tx = tx
+    var intervat = setInterval(function () {
+        console.log("check for confirmation: ", watched_tx);
+        
+        counter++
+        console.log("counter: ", counter);
+        console.log("tx: ", watched_tx);
+        iota.getLatestInclusion([watched_tx])
+            .then(states => {
+                console.log("states: ", states);
+                if (states[0]) {
+                    console.log("transaction confirmed!!!")
+                    let msg = {
+                        status: "working",
+                        message: 'The payment was successful. I go to work now!'
+                    }
+                    sio_server.emit('tx_confirmed', msg);
+                    clearInterval(intervat);
+                    return;
+                }
+            })
+            .catch(err => {
+                // handle error
+                console.log("error getLatestInclusion: ", err);
+
+            })
+    }, 3000);
+}
+
 const watchAddressOnNode = function (address) {
     console.log("watchAddressOnNode")
     sock.subscribe('tx')
@@ -98,11 +139,13 @@ const watchAddressOnNode = function (address) {
             console.log("tx on watched address", data[2])
             sio_server.emit('tx_income', "wait for confirmation");
             // TODO: check if transaction is confirmed and send information
-
+            checkTransactionConfirmation(data[2])
         }
     })
 
 }
+
+
 
 
 
