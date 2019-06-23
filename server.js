@@ -96,22 +96,21 @@ app.post('/orders', function (request, response) {
 
 var counter = 0;
 
-var watched_tx = '';
+var watched_address = '';
 
-var checkTransactionConfirmation = function(tx) {
-    console.log("jetzt=", tx)
-    watched_tx = tx
+var should_balance = 1;
+
+var checkForBalanceUpdate = function(address) {
+    console.log("jetzt=", address)
+    watched_address = address
     var intervat = setInterval(function () {
-        console.log("check for confirmation: ", watched_tx);
-        
+        console.log("check for balance: ", watched_address);
         counter++
         console.log("counter: ", counter);
-        console.log("tx: ", watched_tx);
-        iota.getLatestInclusion([watched_tx])
-            .then(states => {
-                console.log("states: ", states);
-                if (states[0]) {
-                    console.log("transaction confirmed!!!")
+        iota.getBalances([watched_address], 100)
+            .then(({balances}) => {
+                console.log("balance:", balances[0])
+                if (balances[0] && balances[0] >= should_balance) {
                     let msg = {
                         status: "working",
                         message: 'The payment was successful. I go to work now!'
@@ -123,7 +122,7 @@ var checkTransactionConfirmation = function(tx) {
             })
             .catch(err => {
                 // handle error
-                console.log("error getLatestInclusion: ", err);
+                console.log("error getBalances: ", err);
 
             })
     }, 3000);
@@ -139,7 +138,7 @@ const watchAddressOnNode = function (address) {
             console.log("tx on watched address", data[2])
             sio_server.emit('tx_income', "wait for confirmation");
             // TODO: check if transaction is confirmed and send information
-            checkTransactionConfirmation(data[2])
+            checkForBalanceUpdate(address)
         }
     })
 
