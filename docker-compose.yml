@@ -6,36 +6,37 @@ services:
     ports:
       - "3001:3001"
     networks:
-      - overlay
+      - isolation-network
     environment:
       - PORT=3001
-      - NAME=robot 1
+      - NAME=Robot1
       - SEED=FVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
-      - PROVIDER_URL=http//localhost:3002
+      - PROVIDER_URL=http://energy-1:3002
   energy-1:
     build:
       context: .
     ports:
       - "3002:3002"
     networks:
-      - overlay
+      - isolation-network
     environment:
       - PORT=3002
-      - NAME=wind energy
+      - NAME=EnergyWind
       - SEED=AVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
-  
+      - PROVIDER_URL=false
+
   robot-2:
     build:
       context: .
     ports:
       - "3003:3003"
     networks:
-      - overlay
+      - isolation-network
     environment:
       - PORT=3003
-      - NAME=robot 2
+      - NAME=Robot2
       - SEED=BVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
-      - PROVIDER_URL=http//localhost:3004
+      - PROVIDER_URL=http://energy-1:3004
 
   energy-2:
     build:
@@ -43,11 +44,13 @@ services:
     ports:
       - "3004:3004"
     networks:
-      - overlay
+      - isolation-network
     environment:
       - PORT=3004
-      - NAME=solar energy
+      - NAME=EnergySolar
       - SEED=CVLU9YOCIWBCBIHTHODAZGMFQUHYMRLMEFMOVDZOSLSTXANW9KKIFVEXGHPFAVQNER9DCBDKYQ9AZCRFS
+      - PROVIDER_URL=false
 
 networks:
-  overlay:
+  isolation-network:
+    driver: bridge
