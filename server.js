@@ -24,6 +24,7 @@ const NAME = process.env.NAME
 // if the machine has no proivder, this const is empty.
 const PROVIDER_URL = process.env.PROVIDER_URL
 
+console.log("PROVIDER_URL", PROVIDER_URL)
 
 let status = "booting";
 
@@ -68,8 +69,8 @@ app.post('/orders', function (request, response) {
             }
             // Watch for incoming address.
             watchAddressOnNode(address);
-            // send message to "orders" channel. <-- why?
-            sio_server.emit('status', order); // <-- why?
+            // send message to "orders" channel.
+            sio_server.emit('status', order);
             // send reponse with address.
             response.send(address)
         })
