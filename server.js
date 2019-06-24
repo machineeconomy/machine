@@ -111,17 +111,19 @@ var checkForBalanceUpdate = function (address) {
                         }
                     }
                     clearInterval(intervat);
+                    // send update to websocket channel.
+                    sio_server.emit('status', msg);
                 } else {
                     // send message every 5 checks (15 seconds)
                     if(counter % 5 == 0) {
                         msg = {
-                            status: "waiting_for_tx",
+                            status: "waiting_for_tx_confirm",
                             message: '... still waiting for confirmation.'
                         }
+                        // send update to websocket channel.
+                        sio_server.emit('status', msg);
                     }
                 }
-                // send update to websocket channel.
-                sio_server.emit('status', msg);
 
             })
             .catch(err => {
