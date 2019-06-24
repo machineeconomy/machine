@@ -21,6 +21,10 @@ const iotaLibrary = require('@iota/core')
 const PORT = process.env.PORT
 const NAME = process.env.NAME
 
+// if the machine has no proivder, this const is empty.
+const PROVIDER_URL = process.env.PROVIDER_URL
+
+
 let status = "booting";
 
 var sio_server = io(server, {
@@ -50,13 +54,7 @@ app.get('/payout_service', (req, res) => {
 })
 
 app.post('/orders', function (request, response) {
-    console.log("request");
     //var query1 = request.body.var1;
-    let data = {
-        name: "headphone"
-    }
-
-    console.log('a user ordered', data);
     // Generates and returns a new address by calling findTransactions until the first unused address is detected. 
     // This stops working after a snapshot.
     iota.getNewAddress(SEED)
@@ -65,13 +63,14 @@ app.post('/orders', function (request, response) {
             let order = {
                 address: address,
                 name: NAME,
-                status: "waiting for payment",
+                status: "waiting_for_tx",
                 message: 'Thank you for the order. Please transfer 1000 IOTA to this address.'
             }
-            sio_server.emit('orders', order);
-            console.log("address", address)
-
+            // Watch for incoming address.
             watchAddressOnNode(address);
+            // send message to "orders" channel. <-- why?
+            sio_server.emit('status', order); // <-- why?
+            // send reponse with address.
             response.send(address)
         })
         .catch(err => {
@@ -81,30 +80,49 @@ app.post('/orders', function (request, response) {
 
 var counter = 0;
 
-var watched_address = '';
-
 var should_balance = 1;
 
 var checkForBalanceUpdate = function (address) {
-    console.log("jetzt=", address)
     watched_address = address
     var intervat = setInterval(function () {
-        console.log("check for balance: ", watched_address);
+        console.log("check for balance: ", address);
         counter++
         console.log("counter: ", counter);
-        iota.getBalances([watched_address], 100)
+        iota.getBalances([address], 100)
             .then(({ balances }) => {
                 console.log("balance:", balances[0])
+                let msg = {};
+
                 if (balances[0] && balances[0] >= should_balance) {
-                    let msg = {
-                        status: "working",
-                        message: 'The payment was successful. I go to work now!'
+
+                    // Check, if machine has a provider
+                    if (PROVIDER_URL) {
+                        // if yes - payout the provider
+                        payoutService()
+                        msg = {
+                            status: "payout_provider",
+                            message: 'The payment was successful. I will pay my provider!'
+                        }
+                    } else {
+                        // if no, just start working
+                        msg = {
+                            status: "working",
+                            message: 'The payment was successful. I go to work now!'
+                        }
                     }
-                    sio_server.emit('tx_confirmed', msg);
                     clearInterval(intervat);
-                    payoutService()
-                    return;
+                } else {
+                    // send message every 5 checks (15 seconds)
+                    if(counter % 5 == 0) {
+                        msg = {
+                            status: "waiting_for_tx",
+                            message: '... still waiting for confirmation.'
+                        }
+                    }
                 }
+                // send update to websocket channel.
+                sio_server.emit('status', msg);
+
             })
             .catch(err => {
                 // handle error
@@ -122,31 +140,33 @@ const watchAddressOnNode = function (address) {
 
         if (data[0] == 'tx' && address.includes(data[2])) {
             console.log("tx on watched address", data[2])
-            sio_server.emit('tx_income', "wait for confirmation");
-            // TODO: check if transaction is confirmed and send information
+            let msg = {
+                status: "waiting_for_tx_confirm",
+                message: 'The transaction has arrived. Wait for confirmation.'
+            }
+            sio_server.emit('status', msg);
             checkForBalanceUpdate(address)
         }
     })
 }
 
 const payoutService = function () {
-    const PROVIDER_URL = process.env.PROVIDER_URL
-    if (PROVIDER_URL) {
-        console.log("PROVIDER ORDER REQUEST: ", PROVIDER_URL)
-        axios
-            .post(PROVIDER_URL + "/orders/", {})
-            .then(function (response) {
-                console.log(response);
-                if (response.status == 200) {
-                    let address = response.data;
-                    console.log("address", address)
-                    transferIOTA(address);
-                }
-            })
-            .catch(function (error) {
-                console.log("PROVIDER ORDER REQUEST ERROR: ", error)
-            });
-    }
+
+    console.log("PROVIDER ORDER REQUEST: ", PROVIDER_URL)
+    axios
+        .post(PROVIDER_URL + "/orders/", {})
+        .then(function (response) {
+            console.log(response);
+            if (response.status == 200) {
+                let address = response.data;
+                console.log("address", address)
+                transferIOTA(address);
+            }
+        })
+        .catch(function (error) {
+            console.log("PROVIDER ORDER REQUEST ERROR: ", error)
+        });
+
 }
 
 const transferIOTA = function (address) {
@@ -184,6 +204,11 @@ const transferIOTA = function (address) {
                 `Published transaction with tail hash: ${bundle[0].hash}`
             );
             console.log(`Bundle: ${bundle}`);
+            let msg = {
+                status: "working",
+                message: 'Send IOTA to the provider. I go to work now!'
+            }
+            sio_server.emit('status', msg);
         })
         .catch(err => {
             // handle errors here
@@ -204,7 +229,7 @@ sio_server.on('connection', function (socket) {
                 status: status,
                 balance: balance
             }
-            sio_server.emit('info', object);
+            sio_server.emit('init', object);
 
         })
         .catch(err => {
@@ -214,6 +239,6 @@ sio_server.on('connection', function (socket) {
 
 server.listen(PORT, function () {
     console.log(`${NAME} listening on port: ${PORT}`);
-    status = "waiting for order"
+    status = "waiting_for_order"
 });
 

@@ -54,3 +54,16 @@ The sevice also provides a websocket connection. It runs also on the same PORT l
 When a new usser connect to the ws server, the service emits a message with the name and status of the machine in the `welcome` channel.
 
 The service listens to the `order` channel, for incoming orders through the user application. 
+
+
+### machine status
+
+
+|  Status   | Description |
+|-----------|-------------|
+|  booting  | machine starts up. |
+|  waiting_for_order  | machine wait for an incoming order. |
+|  waiting_for_tx  | machine waits for incoming transaction to the iri via ZQM messages. |
+|  waiting_for_tx_confirm  | machine waits for incoming transaction to be valid. |
+|  payout_provider  | machine pays the provider |
+|  working  | machine is working |
