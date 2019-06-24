@@ -1,4 +1,3 @@
-HISTORY*
-STATE*
 node_modules
 .env
+.env_provider

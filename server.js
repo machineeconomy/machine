@@ -1,9 +1,8 @@
-//in node.js
 var app = require('express')();
 var io = require('socket.io');
 var server = require('http').createServer(app);
 var allowedOrigins = "http://localhost:* http://127.0.0.1:*";
-var socket_path = '/socket'; // you need this if you want to connect to something other than the default socket.io path
+var socket_path = '/socket';
 var cors = require('cors')
 
 let zmq = require('zeromq')
@@ -15,6 +14,8 @@ sock.connect('tcp://zmq.devnet.iota.org:5556')
 const dotenv = require('dotenv');
 dotenv.config();
 
+const axios = require('axios');
+
 const iotaLibrary = require('@iota/core')
 
 const PORT = process.env.PORT
@@ -22,14 +23,10 @@ const NAME = process.env.NAME
 
 let status = "booting";
 
-
 var sio_server = io(server, {
     origins: allowedOrigins,
     path: socket_path
 });
-
-const { createAccount } = require('@iota/account')
-const Converter = require('@iota/converter')
 
 const SEED = process.env.SEED;
 
@@ -42,16 +39,15 @@ const iota = iotaLibrary.composeAPI({
     provider: provider
 })
 
-const account = createAccount({
-    seed: Converter.trits(SEED),
-    provider
-});
-console.log("account", account)
-
 app.use(cors())
 
-
 app.get('/', (req, res) => res.send(`I AM ${NAME}`))
+
+app.get('/payout_service', (req, res) => {
+    let payoutaddress = req.query.address
+    transferIOTA(payoutaddress)
+    res.send(`I AM ${NAME} and im sending transaction to ${payoutaddress}`)
+})
 
 app.post('/orders', function (request, response) {
     console.log("request");
@@ -61,36 +57,25 @@ app.post('/orders', function (request, response) {
     }
 
     console.log('a user ordered', data);
-    account.generateCDA({
-        timeoutAt: Math.floor(new Date('7-16-2186').getTime() / 1000), // Date in seconds
-        expectedAmount: 1000,
-        security: 2
-    })
-        .then(cda => {
-            // Do something with the CDA
-            console.log(JSON.stringify(cda, null, 1));
+    // Generates and returns a new address by calling findTransactions until the first unused address is detected. 
+    // This stops working after a snapshot.
+    iota.getNewAddress(SEED)
+        .then(address => {
+            console.log("new order address: ", address)
             let order = {
-                payment_cda: cda,
+                address: address,
                 name: NAME,
                 status: "waiting for payment",
                 message: 'Thank you for the order. Please transfer 1000 IOTA to this address.'
             }
             sio_server.emit('orders', order);
-            let address = cda.address;
             console.log("address", address)
 
-            
-            
-            // TODO: WATCH ADDRESS AND EMIT TO "ORDERS"
             watchAddressOnNode(address);
-
             response.send(address)
-            
-
         })
-        .catch(error => {
-            // Handle errors here
-            console.log(error);
+        .catch(err => {
+            console.log("getNewAddress error", err)
         })
 });
 
@@ -100,7 +85,7 @@ var watched_address = '';
 
 var should_balance = 1;
 
-var checkForBalanceUpdate = function(address) {
+var checkForBalanceUpdate = function (address) {
     console.log("jetzt=", address)
     watched_address = address
     var intervat = setInterval(function () {
@@ -108,7 +93,7 @@ var checkForBalanceUpdate = function(address) {
         counter++
         console.log("counter: ", counter);
         iota.getBalances([watched_address], 100)
-            .then(({balances}) => {
+            .then(({ balances }) => {
                 console.log("balance:", balances[0])
                 if (balances[0] && balances[0] >= should_balance) {
                     let msg = {
@@ -117,6 +102,7 @@ var checkForBalanceUpdate = function(address) {
                     }
                     sio_server.emit('tx_confirmed', msg);
                     clearInterval(intervat);
+                    payoutService()
                     return;
                 }
             })
@@ -141,63 +127,93 @@ const watchAddressOnNode = function (address) {
             checkForBalanceUpdate(address)
         }
     })
-
 }
 
+const payoutService = function () {
+    const PROVIDER_URL = process.env.PROVIDER_URL
+    if (PROVIDER_URL) {
+        console.log("PROVIDER ORDER REQUEST: ", PROVIDER_URL)
+        axios
+            .post(PROVIDER_URL + "/orders/", {})
+            .then(function (response) {
+                console.log(response);
+                if (response.status == 200) {
+                    let address = response.data;
+                    console.log("address", address)
+                    transferIOTA(address);
+                }
+            })
+            .catch(function (error) {
+                console.log("PROVIDER ORDER REQUEST ERROR: ", error)
+            });
+    }
+}
 
+const transferIOTA = function (address) {
+    console.log('send 1 iota to ', address);
 
+    const transfers = [
+        {
+            address: address,
+            value: 1, // 1 iota
+            tag: "AKITA9MACHINE", // optional tag of `0-27` trytes
+            message: "" // optional message in trytes
+        }
+    ];
 
+    // Depth or how far to go for tip selection entry point.
+    const depth = 3;
+
+    // Difficulty of Proof-of-Work required to attach transaction to tangle.
+    // Minimum value on mainnet is `14`, `7` on spamnet and `9` on devnet and other testnets.
+    const minWeightMagnitude = 9;
+
+    // Prepare a bundle and signs it.
+    iota
+        .prepareTransfers(SEED, transfers)
+        .then(trytes => {
+            // Persist trytes locally before sending to network.
+            // This allows for reattachments and prevents key reuse if trytes can't
+            // be recovered by querying the network after broadcasting.
+
+            // Does tip selection, attaches to tangle by doing PoW and broadcasts.
+            return iota.sendTrytes(trytes, depth, minWeightMagnitude);
+        })
+        .then(bundle => {
+            console.log(
+                `Published transaction with tail hash: ${bundle[0].hash}`
+            );
+            console.log(`Bundle: ${bundle}`);
+        })
+        .catch(err => {
+            // handle errors here
+            console.log("error sending transation: ", err)
+        });
+}
 
 sio_server.on('connection', function (socket) {
     console.log('a user connected');
-    let object = {
-        name: NAME,
-        status: status
-    }
-    sio_server.emit('welcome', object);
-    socket.on('order', function (data) {
-        console.log('a user ordered', data);
-        account.generateCDA({
-            timeoutAt: Math.floor(new Date('7-16-2186').getTime() / 1000), // Date in seconds
-            expectedAmount: 1000,
-            security: 2
+    iota.getAccountData(SEED, {
+        start: 0,
+        security: 2
+    })
+        .then(accountData => {
+            const { balance } = accountData
+            let object = {
+                name: NAME,
+                status: status,
+                balance: balance
+            }
+            sio_server.emit('info', object);
+
         })
-            .then(cda => {
-                // Do something with the CDA
-                console.log(JSON.stringify(cda, null, 1));
-                let order = {
-                    payment_cda: cda,
-                    name: NAME,
-                    status: "waiting for payment",
-                    message: 'Thank you for the order. Please transfer 1000 IOTA to this address.'
-                }
-                sio_server.emit('ordered', order);
-                let address = cda.address;
-                console.log("address", address)
-                sock.subscribe('tx')
-                sock.on('message', msg => {
-                    const data = msg.toString().split(' ') // Split to get topic & data
-                    
-                    if (data[0] == 'tx' && address.includes(data[2])) {
-                        console.log("tx on watched address", data[2])
-                        sio_server.emit('tx_income', "wait for confirmation");
-
-                    }
-                })
-
-            })
-            .catch(error => {
-                // Handle errors here
-                console.log(error);
-            })
-       
-
-    });
+        .catch(err => {
+            console.log("get machine account data error: ", err)
+        })
 });
 
 server.listen(PORT, function () {
     console.log(`${NAME} listening on port: ${PORT}`);
     status = "waiting for order"
-
 });
 
