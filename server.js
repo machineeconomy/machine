@@ -1,15 +1,25 @@
 var fs = require('fs');
+const http = require('http');
 var https = require('https');
 
 var app = require('express')();
 
+// Certificate
+const privateKey = fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/privkey.pem', 'utf8');
+const certificate = fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/cert.pem', 'utf8');
+const ca = fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/chain.pem', 'utf8');
 
-var options = {
-    key: fs.readFileSync('./file.pem'),
-    cert: fs.readFileSync('./file.crt')
+const credentials = {
+    key: privateKey,
+    cert: certificate,
+    ca: ca
 };
 
-var server = https.createServer(options, app);
+app.use(express.static(__dirname, { dotfiles: 'allow' }));
+
+// Starting both http & https servers
+const httpServer = http.createServer(app);
+const httpsServer = https.createServer(credentials, app);
 
 var io = require('socket.io');
 
@@ -40,7 +50,7 @@ console.log("PROVIDER_URL", PROVIDER_URL)
 
 let status = "booting";
 
-var sio_server = io(server, {
+var sio_server = io(httpsServers, {
     origins: allowedOrigins,
     path: socket_path
 });
@@ -252,7 +262,7 @@ sio_server.on('connection', function (socket) {
         })
 });
 
-server.listen(PORT, function () {
+httpsServer.listen(PORT, function () {
     console.log(`${NAME} listening on port: ${PORT}`);
     status = "waiting_for_order"
 });
