@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start-provider": "node -r dotenv/config server.js dotenv_config_path=.env_provider"
+    "start-provider": "node -r dotenv/config server.js dotenv_config_path=.env_provider",
+    "start-robot2": "node -r dotenv/config server.js dotenv_config_path=.env_robot2",
+    "start-provider2": "node -r dotenv/config server.js dotenv_config_path=.env_provider2"
   },
   "author": "",
   "license": "ISC",
