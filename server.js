@@ -15,8 +15,6 @@ const credentials = {
     ca: ca
 };
 
-app.use(express.static(__dirname, { dotfiles: 'allow' }));
-
 // Starting both http & https servers
 const httpServer = http.createServer(app);
 const httpsServer = https.createServer(credentials, app);
