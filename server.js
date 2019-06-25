@@ -1,6 +1,18 @@
+var fs = require('fs');
+var https = require('https');
+
 var app = require('express')();
+
+
+var options = {
+    key: fs.readFileSync('./file.pem'),
+    cert: fs.readFileSync('./file.crt')
+};
+
+var server = https.createServer(options, app);
+
 var io = require('socket.io');
-var server = require('http').createServer(app);
+
 var allowedOrigins = "http://localhost:* http://127.0.0.1:*";
 var socket_path = '/socket';
 var cors = require('cors')
