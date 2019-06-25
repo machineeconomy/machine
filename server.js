@@ -48,7 +48,7 @@ console.log("PROVIDER_URL", PROVIDER_URL)
 
 let status = "booting";
 
-var sio_server = io(httpsServers, {
+var sio_server = io(httpsServer, {
     origins: allowedOrigins,
     path: socket_path
 });
