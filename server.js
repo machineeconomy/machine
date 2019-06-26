@@ -117,7 +117,7 @@ var checkForBalanceUpdate = function (address) {
                 if (balances[0] && balances[0] >= should_balance) {
 
                     // Check, if machine has a provider
-                    if (PROVIDER_URL) {
+                    if (PROVIDER_URL && PROVIDER_URL != "false") {
                         // if yes - payout the provider
                         payoutService()
                         msg = {
