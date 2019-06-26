@@ -232,11 +232,30 @@ const transferIOTA = function (address) {
                 message: 'Send IOTA to the provider. I go to work now!'
             }
             sio_server.emit('status', msg);
+            fetchAndBroadcastBalance()
         })
         .catch(err => {
             // handle errors here
             console.log("error sending transation: ", err)
         });
+}
+
+const fetchAndBroadcastBalance = function() {
+    iota.getAccountData(SEED, {
+        start: 0,
+        security: 2
+    })
+        .then(accountData => {
+            const { balance } = accountData
+            let object = {
+                balance: balance
+            }
+            sio_server.emit('new_balance', object);
+
+        })
+        .catch(err => {
+            console.log("get machine account data error: ", err)
+        })
 }
 
 sio_server.on('connection', function (socket) {
@@ -246,10 +265,12 @@ sio_server.on('connection', function (socket) {
         status: status
     }
     sio_server.emit('init', object);
+    fetchAndBroadcastBalance();
 });
 
 httpsServer.listen(PORT, function () {
     console.log(`${NAME} listening on port: ${PORT}`);
     status = "waiting_for_order"
 });
+
 
