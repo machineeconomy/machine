@@ -241,23 +241,11 @@ const transferIOTA = function (address) {
 
 sio_server.on('connection', function (socket) {
     console.log('a user connected');
-    iota.getAccountData(SEED, {
-        start: 0,
-        security: 2
-    })
-        .then(accountData => {
-            const { balance } = accountData
-            let object = {
-                name: NAME,
-                status: status,
-                balance: balance
-            }
-            sio_server.emit('init', object);
-
-        })
-        .catch(err => {
-            console.log("get machine account data error: ", err)
-        })
+    let object = {
+        name: NAME,
+        status: status
+    }
+    sio_server.emit('init', object);
 });
 
 httpsServer.listen(PORT, function () {
