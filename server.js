@@ -2,22 +2,22 @@ var fs = require('fs');
 const http = require('http');
 var https = require('https');
 
+const dotenv = require('dotenv');
+dotenv.config();
+
 var app = require('express')();
+let httpsServer;
+let httpServer;
+if (!process.env.DEVELOPMENT) {
+    httpsServer = https.createServer({
+        key: fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/privkey.pem', 'utf8'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/cert.pem', 'utf8'),
+        ca: fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/chain.pem', 'utf8')
+    }, app);
+} else {
+    httpServer = http.createServer(app);
+}
 
-// Certificate
-const privateKey = fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/privkey.pem', 'utf8');
-const certificate = fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/cert.pem', 'utf8');
-const ca = fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/chain.pem', 'utf8');
-
-const credentials = {
-    key: privateKey,
-    cert: certificate,
-    ca: ca
-};
-
-// Starting both http & https servers
-const httpServer = http.createServer(app);
-const httpsServer = https.createServer(credentials, app);
 
 var io = require('socket.io');
 
@@ -30,9 +30,6 @@ let sock = zmq.socket('sub')
 
 // Connect to the devnet node's ZMQ port
 sock.connect('tcp://zmq.devnet.iota.org:5556')
-
-const dotenv = require('dotenv');
-dotenv.config();
 
 const axios = require('axios');
 
@@ -48,10 +45,18 @@ console.log("PROVIDER_URL", PROVIDER_URL)
 
 let status = "booting";
 
-var sio_server = io(httpsServer, {
-    origins: allowedOrigins,
-    path: socket_path
-});
+var sio_server;
+if (!process.env.DEVELOPMENT) {
+    sio_server = io(httpsServer, {
+        origins: allowedOrigins,
+        path: socket_path
+    });
+} else {
+    sio_server = io(httpServer, {
+        origins: allowedOrigins,
+        path: socket_path
+    });
+}
 
 const SEED = process.env.SEED;
 
@@ -136,7 +141,7 @@ var checkForBalanceUpdate = function (address) {
                     sio_server.emit('status', msg);
                 } else {
                     // send message every 5 checks (15 seconds)
-                    if(counter % 5 == 0) {
+                    if (counter % 5 == 0) {
                         msg = {
                             status: "waiting_for_tx_confirm",
                             message: '... still waiting for confirmation.'
@@ -240,7 +245,7 @@ const transferIOTA = function (address) {
         });
 }
 
-const fetchAndBroadcastBalance = function() {
+const fetchAndBroadcastBalance = async function () {
     iota.getAccountData(SEED, {
         start: 0,
         security: 2
@@ -268,9 +273,17 @@ sio_server.on('connection', function (socket) {
     fetchAndBroadcastBalance();
 });
 
+if (!process.env.DEVELOPMENT) {
+
 httpsServer.listen(PORT, function () {
     console.log(`${NAME} listening on port: ${PORT}`);
     status = "waiting_for_order"
 });
-
+} else {
+    httpServer.listen(PORT, function () {
+        console.log("START DEV SERVER")
+        console.log(`${NAME} listening on port: ${PORT}`);
+        status = "waiting_for_order"
+    });
+}
 
