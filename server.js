@@ -16,19 +16,21 @@ const iota = iotaLibrary.composeAPI({
 })
 
 const NAME = process.env.NAME
+const IS_PROVIDER = process.env.IS_PROVIDER
+const PROVIDER_URL = process.env.PROVIDER_URL
 const SEED = process.env.SEED;
 
 
 router.get('/', (req, res) => res.send(`I AM ${NAME}`))
 
 router.post('/orders', function (request, response) {
-    console.log("New incoming order... generate new address.")
+    log("New incoming order... generate new address.")
 
     // Generates and returns a new address by calling findTransactions until the first unused address is detected. 
     // This stops working after a snapshot.
     iota.getNewAddress(SEED)
         .then(address => {
-            console.log("new order address: ", address)
+            log("order address: " + address)
             let order = {
                 address: address,
                 name: NAME,
@@ -53,7 +55,7 @@ router.post('/orders', function (request, response) {
 });
 
 socketServer.on('connection', function (socket) {
-    console.log('a user connected');
+    log(`User '${socket.id}' connected`);
     let object = {
         name: NAME,
         status: status
@@ -63,6 +65,6 @@ socketServer.on('connection', function (socket) {
 });
 
 
-setInterval(function() {
-    log("tick")
-}, 1000)
+log(`Machine ${NAME} is booting.`)
+log(`Machine is a ${IS_PROVIDER == "true" ? 'provider' : 'robot'}.`)
+log(`Machine provider: ${PROVIDER_URL ? PROVIDER_URL : 'none'}`)

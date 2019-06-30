@@ -2,6 +2,7 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const cors = require('cors')
+const { log } = require('./Logger.js')
 
 const app = require('express')();
 let server;
@@ -29,7 +30,7 @@ module.exports = {
 }
 
 server.listen(PORT, function () {
-    console.log(`${NAME} listening on port: ${PORT}`);
+    log(`Machine ${NAME} is ready and listening on port: ${PORT}`);
     status = "waiting_for_order"
 });
 

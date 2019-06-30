@@ -7,7 +7,9 @@ const iota = iotaLibrary.composeAPI({
     provider: provider
 })
 
-const { socketServer }  = require('./WebSockets.js')
+const { socketServer } = require('./WebSockets.js')
+
+const { log } = require('./Logger.js')
 
 const SEED = process.env.SEED;
 const NAME = process.env.NAME
@@ -25,8 +27,6 @@ const axios = require('axios');
 // if the machine has no proivder, this const is empty.
 const PROVIDER_URL = process.env.PROVIDER_URL
 
-console.log("PROVIDER_URL", PROVIDER_URL)
-
 let status = "booting";
 
 let counter = 0;
@@ -35,7 +35,7 @@ const should_balance = 1;
 
 
 const fetchAndBroadcastBalance = async function () {
-    console.log("fetchAndBroadcastBalance called")
+    log("fetchAndBroadcastBalance called")
     let startTime = new Date();
     iota.getAccountData(SEED, {
         start: 0,
@@ -54,17 +54,15 @@ const fetchAndBroadcastBalance = async function () {
 
             // get seconds 
             var seconds = Math.round(timeDiff);
-            console.log(seconds + " seconds");
-            console.log(`Time to fetch balance: ${seconds} Sendons`)
-            console.log("fetchAndBroadcastBalance finished")
+            log(`Time to fetch balance: ${seconds} seconds`)
         })
         .catch(err => {
-            console.log("get machine account data error: ", err)
-        })        
+            log("get machine account data error: " + err)
+        })
 }
 
 const transferTokensTo = function (address) {
-    console.log('send 1 iota to ', address);
+    log('Send 1 IOTA token to: ' + address);
 
     const transfers = [
         {
@@ -94,33 +92,29 @@ const transferTokensTo = function (address) {
             return iota.sendTrytes(trytes, depth, minWeightMagnitude);
         })
         .then(bundle => {
-            console.log(
+            log(
                 `Published transaction with tail hash: ${bundle[0].hash}`
             );
-            console.log(`Bundle: ${bundle}`);
-            let msg = {
+            let data = {
                 status: "working",
-                message: 'Send IOTA to the provider. I go to work now!'
+                message: 'Sent IOTA to the energy provider. I wait for energy now.'
             }
-            socketServer.emit('status', msg);
+            socketServer.emit('status', data);
+            log(data.message);
             fetchAndBroadcastBalance()
         })
         .catch(err => {
             // handle errors here
-            console.log("error sending transation: ", err)
+            log("error sending transation: " + err)
         });
 }
 
 var checkForBalanceUpdateOn = function (address) {
-    watched_address = address
     var intervat = setInterval(function () {
-        console.log("check for balance: ", address);
         counter++
-        console.log("counter: ", counter);
         iota.getBalances([address], 100)
             .then(({ balances }) => {
-                console.log("balance:", balances[0])
-                let msg = {};
+                let data = {};
 
                 if (balances[0] && balances[0] >= should_balance) {
 
@@ -128,20 +122,24 @@ var checkForBalanceUpdateOn = function (address) {
                     if (PROVIDER_URL && PROVIDER_URL != "false") {
                         // if yes - payout the provider
                         payoutProvider()
-                        msg = {
+                        data = {
                             status: "payout_provider",
                             message: 'The payment was successful. I will pay my provider!'
                         }
                     } else {
                         // if no, just start working
-                        msg = {
+                        data = {
                             status: "working",
-                            message: 'The payment was successful. I go to work now!'
+                            message: 'The payment was successful. I will provide energy.!'
                         }
+
                     }
                     clearInterval(intervat);
                     // send update to websocket channel.
-                    socketServer.emit('status', msg);
+                    socketServer.emit('status', data);
+                    log(data.message);
+                    counter = 0;
+
                 } else {
                     // send message every 5 checks (15 seconds)
                     if (counter % 5 == 0) {
@@ -151,6 +149,7 @@ var checkForBalanceUpdateOn = function (address) {
                         }
                         // send update to websocket channel.
                         socketServer.emit('status', msg);
+                        log(`Balance is ${balances[0]}, still waiting for confirmation.`)
                     }
                 }
 
@@ -166,32 +165,30 @@ var checkForBalanceUpdateOn = function (address) {
 
 const payoutProvider = function () {
 
-    console.log("PROVIDER ORDER REQUEST: ", PROVIDER_URL)
+    log("Payout provider: " + PROVIDER_URL)
     axios
         .post(PROVIDER_URL + "/orders/", {})
         .then(function (response) {
-            console.log(response);
             if (response.status == 200) {
                 let address = response.data;
-                console.log("address", address)
                 transferTokensTo(address);
             }
         })
         .catch(function (error) {
-            console.log("PROVIDER ORDER REQUEST ERROR: ", error)
+            log("PROVIDER ORDER REQUEST ERROR: " + error)
         });
 
 }
 
 
 const watchAddressOnNode = function (address) {
-    console.log("watchAddressOnNode")
+    log("watchAddressOnNode: " + address)
     sock.subscribe('tx')
     sock.on('message', msg => {
         const data = msg.toString().split(' ') // Split to get topic & data
 
         if (data[0] == 'tx' && address.includes(data[2])) {
-            console.log("tx on watched address", data[2])
+            log("tx found: " + data[2])
             let msg = {
                 status: "waiting_for_tx_confirm",
                 message: 'The transaction has arrived. Wait for confirmation.'
@@ -201,34 +198,6 @@ const watchAddressOnNode = function (address) {
         }
     })
 }
-
-const getNewAddress = function() {
-    // Generates and returns a new address by calling findTransactions until the first unused address is detected. 
-    // This stops working after a snapshot.
-    iota.getNewAddress(SEED)
-        .then(address => {
-            console.log("new order address: ", address)
-            let order = {
-                address: address,
-                name: NAME,
-                status: "waiting_for_tx",
-                message: 'Thank you for the order. Please transfer 1000 IOTA to this address.'
-            }
-            // Watch for incoming address.
-            watchAddressOnNode(address);
-
-            // send message to "orders" channel.
-            socketServer.emit('status', order);
-            // send reponse with address.
-             
-            
-        })
-        .catch(err => {
-            console.log("getNewAddress error", err)
-        })
-}
-
-
 
 module.exports = {
     fetchAndBroadcastBalance,
