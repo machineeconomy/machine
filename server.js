@@ -1,66 +1,12 @@
-var fs = require('fs');
-const http = require('http');
-var https = require('https');
-
 const dotenv = require('dotenv');
 dotenv.config();
 
-var app = require('express')();
-let httpsServer;
-let httpServer;
-if (!process.env.DEVELOPMENT) {
-    httpsServer = https.createServer({
-        key: fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/privkey.pem', 'utf8'),
-        cert: fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/cert.pem', 'utf8'),
-        ca: fs.readFileSync('/etc/letsencrypt/live/akita.einfach-iota.de/chain.pem', 'utf8')
-    }, app);
-} else {
-    httpServer = http.createServer(app);
-}
-
-
-var io = require('socket.io');
-
-var allowedOrigins = "http://localhost:* http://127.0.0.1:* https://machineeconomy.github.io:*";
-var socket_path = '/socket';
-var cors = require('cors')
-
-let zmq = require('zeromq')
-let sock = zmq.socket('sub')
-
-// Connect to the devnet node's ZMQ port
-sock.connect('tcp://zmq.devnet.iota.org:5556')
-
-const axios = require('axios');
+const { router } = require('./src/WebServer.js')
+const { socketServer } = require('./src/WebSockets.js')
+const { fetchAndBroadcastBalance, watchAddressOnNode } = require('./src/WebTangle.js')
+const { log } = require('./src/Logger.js')
 
 const iotaLibrary = require('@iota/core')
-
-const PORT = process.env.PORT
-const NAME = process.env.NAME
-
-// if the machine has no proivder, this const is empty.
-const PROVIDER_URL = process.env.PROVIDER_URL
-
-console.log("PROVIDER_URL", PROVIDER_URL)
-
-let status = "booting";
-
-var sio_server;
-if (!process.env.DEVELOPMENT) {
-    sio_server = io(httpsServer, {
-        origins: allowedOrigins,
-        path: socket_path
-    });
-} else {
-    sio_server = io(httpServer, {
-        origins: allowedOrigins,
-        path: socket_path
-    });
-}
-
-const SEED = process.env.SEED;
-
-console.log("seed", SEED)
 
 // Local node to connect to;
 const provider = 'https://nodes.devnet.thetangle.org:443';
@@ -69,18 +15,15 @@ const iota = iotaLibrary.composeAPI({
     provider: provider
 })
 
-app.use(cors())
+const NAME = process.env.NAME
+const SEED = process.env.SEED;
 
-app.get('/', (req, res) => res.send(`I AM ${NAME}`))
 
-app.get('/payout_service', (req, res) => {
-    let payoutaddress = req.query.address
-    transferIOTA(payoutaddress)
-    res.send(`I AM ${NAME} and im sending transaction to ${payoutaddress}`)
-})
+router.get('/', (req, res) => res.send(`I AM ${NAME}`))
 
-app.post('/orders', function (request, response) {
-    //var query1 = request.body.var1;
+router.post('/orders', function (request, response) {
+    console.log("New incoming order... generate new address.")
+
     // Generates and returns a new address by calling findTransactions until the first unused address is detected. 
     // This stops working after a snapshot.
     iota.getNewAddress(SEED)
@@ -94,196 +37,32 @@ app.post('/orders', function (request, response) {
             }
             // Watch for incoming address.
             watchAddressOnNode(address);
+
             // send message to "orders" channel.
-            sio_server.emit('status', order);
+            socketServer.emit('status', order);
             // send reponse with address.
             response.send(address)
+
+
         })
         .catch(err => {
             console.log("getNewAddress error", err)
         })
+
+
 });
 
-var counter = 0;
-
-var should_balance = 1;
-
-var checkForBalanceUpdate = function (address) {
-    watched_address = address
-    var intervat = setInterval(function () {
-        console.log("check for balance: ", address);
-        counter++
-        console.log("counter: ", counter);
-        iota.getBalances([address], 100)
-            .then(({ balances }) => {
-                console.log("balance:", balances[0])
-                let msg = {};
-
-                if (balances[0] && balances[0] >= should_balance) {
-
-                    // Check, if machine has a provider
-                    if (PROVIDER_URL && PROVIDER_URL != "false") {
-                        // if yes - payout the provider
-                        payoutService()
-                        msg = {
-                            status: "payout_provider",
-                            message: 'The payment was successful. I will pay my provider!'
-                        }
-                    } else {
-                        // if no, just start working
-                        msg = {
-                            status: "working",
-                            message: 'The payment was successful. I go to work now!'
-                        }
-                    }
-                    clearInterval(intervat);
-                    // send update to websocket channel.
-                    sio_server.emit('status', msg);
-                } else {
-                    // send message every 5 checks (15 seconds)
-                    if (counter % 5 == 0) {
-                        msg = {
-                            status: "waiting_for_tx_confirm",
-                            message: '... still waiting for confirmation.'
-                        }
-                        // send update to websocket channel.
-                        sio_server.emit('status', msg);
-                    }
-                }
-
-            })
-            .catch(err => {
-                // handle error
-                console.log("error getBalances: ", err);
-
-            })
-    }, 3000);
-}
-
-const watchAddressOnNode = function (address) {
-    console.log("watchAddressOnNode")
-    sock.subscribe('tx')
-    sock.on('message', msg => {
-        const data = msg.toString().split(' ') // Split to get topic & data
-
-        if (data[0] == 'tx' && address.includes(data[2])) {
-            console.log("tx on watched address", data[2])
-            let msg = {
-                status: "waiting_for_tx_confirm",
-                message: 'The transaction has arrived. Wait for confirmation.'
-            }
-            sio_server.emit('status', msg);
-            checkForBalanceUpdate(address)
-        }
-    })
-}
-
-const payoutService = function () {
-
-    console.log("PROVIDER ORDER REQUEST: ", PROVIDER_URL)
-    axios
-        .post(PROVIDER_URL + "/orders/", {})
-        .then(function (response) {
-            console.log(response);
-            if (response.status == 200) {
-                let address = response.data;
-                console.log("address", address)
-                transferIOTA(address);
-            }
-        })
-        .catch(function (error) {
-            console.log("PROVIDER ORDER REQUEST ERROR: ", error)
-        });
-
-}
-
-const transferIOTA = function (address) {
-    console.log('send 1 iota to ', address);
-
-    const transfers = [
-        {
-            address: address,
-            value: 1, // 1 iota
-            tag: "AKITA9MACHINE", // optional tag of `0-27` trytes
-            message: "" // optional message in trytes
-        }
-    ];
-
-    // Depth or how far to go for tip selection entry point.
-    const depth = 3;
-
-    // Difficulty of Proof-of-Work required to attach transaction to tangle.
-    // Minimum value on mainnet is `14`, `7` on spamnet and `9` on devnet and other testnets.
-    const minWeightMagnitude = 9;
-
-    // Prepare a bundle and signs it.
-    iota
-        .prepareTransfers(SEED, transfers)
-        .then(trytes => {
-            // Persist trytes locally before sending to network.
-            // This allows for reattachments and prevents key reuse if trytes can't
-            // be recovered by querying the network after broadcasting.
-
-            // Does tip selection, attaches to tangle by doing PoW and broadcasts.
-            return iota.sendTrytes(trytes, depth, minWeightMagnitude);
-        })
-        .then(bundle => {
-            console.log(
-                `Published transaction with tail hash: ${bundle[0].hash}`
-            );
-            console.log(`Bundle: ${bundle}`);
-            let msg = {
-                status: "working",
-                message: 'Send IOTA to the provider. I go to work now!'
-            }
-            sio_server.emit('status', msg);
-            fetchAndBroadcastBalance()
-        })
-        .catch(err => {
-            // handle errors here
-            console.log("error sending transation: ", err)
-        });
-}
-
-const fetchAndBroadcastBalance = async function () {
-    iota.getAccountData(SEED, {
-        start: 0,
-        security: 2
-    })
-        .then(accountData => {
-            const { balance } = accountData
-            let object = {
-                balance: balance
-            }
-            sio_server.emit('new_balance', object);
-
-        })
-        .catch(err => {
-            console.log("get machine account data error: ", err)
-        })
-}
-
-sio_server.on('connection', function (socket) {
+socketServer.on('connection', function (socket) {
     console.log('a user connected');
     let object = {
         name: NAME,
         status: status
     }
-    sio_server.emit('init', object);
+    socketServer.emit('init', object);
     fetchAndBroadcastBalance();
 });
 
-if (!process.env.DEVELOPMENT) {
 
-httpsServer.listen(PORT, function () {
-    console.log(`${NAME} listening on port: ${PORT}`);
-    status = "waiting_for_order"
-});
-} else {
-    httpServer.listen(PORT, function () {
-        console.log("START DEV SERVER")
-        console.log(`${NAME} listening on port: ${PORT}`);
-        status = "waiting_for_order"
-    });
-}
-
+setInterval(function() {
+    log("tick")
+}, 1000)
