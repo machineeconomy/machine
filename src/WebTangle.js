@@ -1,15 +1,16 @@
-const iotaLibrary = require('@iota/core')
+const iotaCore = require('@iota/core')
 
 // Local node to connect to;
 const provider = 'https://nodes.devnet.thetangle.org:443';
 
-const iota = iotaLibrary.composeAPI({
+const iota = iotaCore.composeAPI({
     provider: provider
 })
 
 const { socketServer } = require('./WebSockets.js')
 
 const { log } = require('./Logger.js')
+const { nextIndex, getCurrentIndex, saveCurrentBalance, getCurrentBalance } = require('./Database.js')
 
 const SEED = process.env.SEED;
 const NAME = process.env.NAME
@@ -34,19 +35,17 @@ let counter = 0;
 const should_balance = 1;
 
 
-const fetchAndBroadcastBalance = async function () {
-    log("fetchAndBroadcastBalance called")
+const fetchAndBroadcastBalanceFrom = async function (address) {
+
+    log("fetchAndBroadcastBalanceFrom: " + address)
     let startTime = new Date();
-    iota.getAccountData(SEED, {
-        start: 0,
-        security: 2
-    })
-        .then(accountData => {
-            const { balance } = accountData
-            let object = {
-                balance: balance
-            }
-            socketServer.emit('new_balance', object);
+
+    iota.getBalances([address], 100)
+        .then(({ balances }) => {
+            // ...
+            let balance = balances[0]
+            saveCurrentBalance(balance)
+            socketServer.emit('new_balance', { balance: balance});
             let endTime = new Date();
             var timeDiff = endTime - startTime; //in ms
             // strip the ms
@@ -54,59 +53,96 @@ const fetchAndBroadcastBalance = async function () {
 
             // get seconds 
             var seconds = Math.round(timeDiff);
-            log(`Time to fetch balance: ${seconds} seconds`)
+            log(`Time to fetch balance(${balance} iota): ${seconds} seconds`)
         })
         .catch(err => {
-            log("get machine account data error: " + err)
+            log("ERROR fetchAndBroadcastBalanceFrom: " + err)
         })
+    /**
+        let startTime = new Date();
+        iota.getAccountData(SEED, {
+            start: 0,
+            security: 2
+        })
+            .then(accountData => {
+                const { balance } = accountData
+                let object = {
+                    balance: balance
+                }
+                socketServer.emit('new_balance', object);
+                let endTime = new Date();
+                var timeDiff = endTime - startTime; //in ms
+                // strip the ms
+                timeDiff /= 1000;
+
+                // get seconds 
+                var seconds = Math.round(timeDiff);
+                log(`Time to fetch balance: ${seconds} seconds`)
+            })
+            .catch(err => {
+                log("get machine account data error: " + err)
+            })
+
+
+    */
 }
 
 const transferTokensTo = function (address) {
+
+    let iota_amount = 1
     log('Send 1 IOTA token to: ' + address);
+
+    let currentBalance = getCurrentBalance()
+
+    let options = {
+        'inputs': [{
+            address: getCurrentAddress(),
+            keyIndex: getCurrentIndex(),
+            balance: currentBalance,
+            security: 2,
+        }]
+    }
 
     const transfers = [
         {
             address: address,
-            value: 1, // 1 iota
+            value: iota_amount, // 1 iota
             tag: "AKITA9MACHINE", // optional tag of `0-27` trytes
             message: "" // optional message in trytes
         }
     ];
 
-    // Depth or how far to go for tip selection entry point.
-    const depth = 3;
+    let newAddress = getNewIotaAddress()
 
-    // Difficulty of Proof-of-Work required to attach transaction to tangle.
-    // Minimum value on mainnet is `14`, `7` on spamnet and `9` on devnet and other testnets.
-    const minWeightMagnitude = 9;
+    if (currentBalance > 1) {
+        log('current balance is: ${}. Send them to new address.  ')
+        transfers.push(
+            {
+                address: newAddress,
+                value: currentBalance - iota_amount,
+                tag: "AKITA9MACHINE", // optional tag of `0-27` trytes
+                message: "" // optional message in trytes
+            }
+        );
+    }
 
-    // Prepare a bundle and signs it.
+
     iota
-        .prepareTransfers(SEED, transfers)
-        .then(trytes => {
-            // Persist trytes locally before sending to network.
-            // This allows for reattachments and prevents key reuse if trytes can't
-            // be recovered by querying the network after broadcasting.
-
-            // Does tip selection, attaches to tangle by doing PoW and broadcasts.
-            return iota.sendTrytes(trytes, depth, minWeightMagnitude);
-        })
+        .prepareTransfers(SEED, transfers, options)
+        .then(trytes => iota.sendTrytes(trytes, 3, 9))
         .then(bundle => {
-            log(
-                `Published transaction with tail hash: ${bundle[0].hash}`
-            );
+            log('Transfer sent: https://devnet.thetangle.org/transaction/' + bundle[0].hash)
             let data = {
                 status: "working",
                 message: 'Sent IOTA to the energy provider. I wait for energy now.'
             }
             socketServer.emit('status', data);
             log(data.message);
-            fetchAndBroadcastBalance()
+            fetchAndBroadcastBalanceFrom(newAddress)
         })
         .catch(err => {
-            // handle errors here
-            log("error sending transation: " + err)
-        });
+            log("ERROR transferTokensTo" + err)
+        })
 }
 
 var checkForBalanceUpdateOn = function (address) {
@@ -117,7 +153,7 @@ var checkForBalanceUpdateOn = function (address) {
                 let data = {};
 
                 if (balances[0] && balances[0] >= should_balance) {
-
+                    saveCurrentBalance(balances[0])
                     // Check, if machine has a provider
                     if (PROVIDER_URL && PROVIDER_URL != "false") {
                         // if yes - payout the provider
@@ -188,7 +224,7 @@ const watchAddressOnNode = function (address) {
         const data = msg.toString().split(' ') // Split to get topic & data
 
         if (data[0] == 'tx' && address.includes(data[2])) {
-            log("tx found: " + data[2])
+            log("tx found on: " + data[2])
             let msg = {
                 status: "waiting_for_tx_confirm",
                 message: 'The transaction has arrived. Wait for confirmation.'
@@ -199,8 +235,33 @@ const watchAddressOnNode = function (address) {
     })
 }
 
+
+
+const getNewIotaAddress = function () {
+    let address = iotaCore.generateAddress(SEED, nextIndex(), 2)
+    log("order address: " + address)
+    let order = {
+        address: address,
+        name: NAME,
+        status: "waiting_for_tx",
+        message: 'Thank you for the order. Please transfer 1000 IOTA to this address.'
+    }
+    // Watch for incoming address.
+    watchAddressOnNode(address);
+
+    // send message to "orders" channel.
+    socketServer.emit('status', order);
+    return address;
+}
+const getCurrentAddress = function () {
+    return iotaCore.generateAddress(SEED, getCurrentIndex(), 2);
+}
+
+
 module.exports = {
-    fetchAndBroadcastBalance,
+    fetchAndBroadcastBalanceFrom,
     checkForBalanceUpdateOn,
-    watchAddressOnNode
+    watchAddressOnNode,
+    getNewIotaAddress,
+    getCurrentAddress
 }

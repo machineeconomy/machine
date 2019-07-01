@@ -4,3 +4,4 @@ node_modules
 .env_robot2
 .env_provider2
 .well-known/
+databases/*
