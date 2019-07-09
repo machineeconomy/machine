@@ -2,9 +2,14 @@ const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const cors = require('cors')
+
 const { log } = require('./Logger.js')
 
-const app = require('express')();
+const express = require('express');
+var app = express();
+
+app.use('/dist', express.static('dist'))
+
 let server;
 
 const PORT = process.env.PORT
@@ -21,7 +26,6 @@ if (!process.env.DEVELOPMENT) {
 }
 
 app.use(cors())
-
 
 
 module.exports = {

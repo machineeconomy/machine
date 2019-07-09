@@ -1,5 +1,6 @@
 const dotenv = require('dotenv');
 dotenv.config();
+const path = require('path');
 
 const { router } = require('./src/WebServer.js')
 const { socketServer } = require('./src/WebSockets.js')
@@ -11,12 +12,7 @@ const NAME = process.env.NAME
 const IS_PROVIDER = process.env.IS_PROVIDER
 const PROVIDER_URL = process.env.PROVIDER_URL
 
-router.get('/', (req, res) => res.send(`
-    I AM ${NAME}. Current balance: ${getCurrentBalance()} <br>
-    Index: ${getCurrentIndex()} <br>
-    Address: <a target="_blank" href="https://devnet.thetangle.org/address/${getCurrentAddress()}">${getCurrentAddress()}</a>
-`
-))
+router.get('/', (req, res) => res.sendFile(path.join(__dirname + '/frontend/index.html')));
 
 router.post('/orders', function (request, response) {
     log("New incoming order... generate new address.")
