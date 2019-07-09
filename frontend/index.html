@@ -11,8 +11,8 @@
 
     <title>AKITA Machine Dashboard</title>
 
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -26,13 +26,73 @@
 </head>
 
 <body>
-    <h1>AKITA Machine Dashboard</h1>
+    <div class="container">
+        <div class="jumbotron">
+            <h1 class="display-4">AKITA Machine</h1>
+            <p class="lead">Turn every device to an Akita machine and be ready for the machine to machine economy.</p>
+            <hr class="my-4">
+            <a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a>
+        </div>
 
-    <my-custom-button msg="Hello World!"></my-custom-button>
+        <h2>Dashboard</h2>
+        <p>Manage the akita machine.</p>
+        <div class="row">
+            <div class="card w-100">
+                <div class="card-body">
+                    <h5 class="card-title">Robot 1</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">This machine is used for akita m2m live-demo.
+                    </h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Status:</strong>
+                            <my-custom-status-badge url="http://localhost:3001"></my-custom-status-badge>
+                        </li>
+                        <li class="list-group-item"><strong>Url:</strong> https://akita.einfach-iota.de:3001/</li>
+                        <li class="list-group-item"><strong>Balance:</strong> 100000</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
-    <my-custom-vue-web-component msg="Hello World!"></my-custom-vue-web-component>
+        <h2>Provider</h2>
+        <p>Shows current providers. You can easily manage your providers here.</p>
+        <div class="row">
+            <div class="col-sm">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Provider 1</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Energy Provider.
+                        </h6>
+                        <ul class="list-group list-group-flush">
+                            </li>
+                            <li class="list-group-item"><strong>Url:</strong> https://akita.einfach-iota.de:3002/</li>
+                            <li class="list-group-item"><strong>Amount:</strong> 100</li>
+                            <li class="list-group-item"><strong>Payout:</strong> after incomming payment.
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Provider 2</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">Energy Provider.
+                        </h6>
+                        <ul class="list-group list-group-flush">
+                            </li>
+                            <li class="list-group-item"><strong>Url:</strong> https://akita.einfach-iota.de:3004/</li>
+                            <li class="list-group-item"><strong>Amount:</strong> 10</li>
+                            <li class="list-group-item"><strong>Payout:</strong> every hour.
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <my-custom-status-badge url="http://localhost:3001"></my-custom-status-badge>
+        <my-custom-button msg="Hello World!"></my-custom-button>
+
+        <my-custom-vue-web-component msg="Hello World!"></my-custom-vue-web-component>
+
+    </div>
 
 </body>
 
