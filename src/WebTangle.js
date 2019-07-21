@@ -8,12 +8,14 @@ const iota = iotaCore.composeAPI({
 })
 
 const { socketServer } = require('./WebSockets.js')
+const { logStatus } = require('./SocketLogger.js')
 
 const { log } = require('./Logger.js')
 const { nextIndex, getCurrentIndex, saveCurrentBalance, getCurrentBalance } = require('./Database.js')
 
 const SEED = process.env.SEED;
 const NAME = process.env.NAME
+const VALUE = process.env.VALUE
 
 
 const zmq = require('zeromq')
@@ -112,7 +114,7 @@ const transferTokensTo = function (address) {
         }
     ];
 
-    let newAddress = getNewIotaAddress()
+    let newAddress = iotaCore.generateAddress(SEED, nextIndex(), 2)
 
     if (currentBalance > 1) {
         log('current balance is: ${}. Send them to new address.  ')
@@ -136,7 +138,9 @@ const transferTokensTo = function (address) {
                 status: "working",
                 message: 'Sent IOTA to the energy provider. I wait for energy now.'
             }
-            socketServer.emit('status', data);
+            
+            //socketServer.emit('status', data);
+            logStatus(data)
             log(data.message);
             fetchAndBroadcastBalanceFrom(newAddress)
         })
@@ -172,19 +176,22 @@ var checkForBalanceUpdateOn = function (address) {
                     }
                     clearInterval(intervat);
                     // send update to websocket channel.
-                    socketServer.emit('status', data);
+                    logStatus(data)
+                    //socketServer.emit('status', data);
                     log(data.message);
                     counter = 0;
 
                 } else {
                     // send message every 5 checks (15 seconds)
                     if (counter % 5 == 0) {
-                        msg = {
+                        data = {
                             status: "waiting_for_tx_confirm",
                             message: '... still waiting for confirmation.'
                         }
                         // send update to websocket channel.
-                        socketServer.emit('status', msg);
+                        logStatus(data)
+
+//                        socketServer.emit('status', msg);
                         log(`Balance is ${balances[0]}, still waiting for confirmation.`)
                     }
                 }
@@ -217,40 +224,46 @@ const payoutProvider = function () {
 }
 
 
-const watchAddressOnNode = function (address) {
+const watchAddressOnNode = function (address, checkBalance = true) {
     log("watchAddressOnNode: " + address)
+
     sock.subscribe('tx')
     sock.on('message', msg => {
         const data = msg.toString().split(' ') // Split to get topic & data
 
         if (data[0] == 'tx' && address.includes(data[2])) {
             log("tx found on: " + data[2])
-            let msg = {
+            let message = {
                 status: "waiting_for_tx_confirm",
                 message: 'The transaction has arrived. Wait for confirmation.'
             }
-            socketServer.emit('status', msg);
-            checkForBalanceUpdateOn(address)
+            logStatus(message)
+            //socketServer.emit('status', msg);
+            if (checkBalance) {
+                checkForBalanceUpdateOn(address)
+            }
         }
     })
 }
 
 
 
-const getNewIotaAddress = function () {
+const handleOrder = function () {
     let address = iotaCore.generateAddress(SEED, nextIndex(), 2)
     log("order address: " + address)
-    let order = {
+    log("value: " + VALUE)
+    let data = {
         address: address,
         name: NAME,
         status: "waiting_for_tx",
-        message: 'Thank you for the order. Please transfer 1000 IOTA to this address.'
+        message: `Thank you for the order. Please transfer ${VALUE} IOTA to this address.`
     }
     // Watch for incoming address.
-    watchAddressOnNode(address);
-
+    watchAddressOnNode(address, VALUE > 0 ? true : false);
+    
     // send message to "orders" channel.
-    socketServer.emit('status', order);
+    logStatus(data)
+    //socketServer.emit('status', order);
     return address;
 }
 const getCurrentAddress = function () {
@@ -262,6 +275,6 @@ module.exports = {
     fetchAndBroadcastBalanceFrom,
     checkForBalanceUpdateOn,
     watchAddressOnNode,
-    getNewIotaAddress,
+    handleOrder,
     getCurrentAddress
 }

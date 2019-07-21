@@ -4,7 +4,7 @@ const path = require('path');
 
 const { router } = require('./src/WebServer.js')
 const { socketServer } = require('./src/WebSockets.js')
-const { fetchAndBroadcastBalanceFrom, getNewIotaAddress, getCurrentAddress} = require('./src/WebTangle.js')
+const { fetchAndBroadcastBalanceFrom, handleOrder, getCurrentAddress} = require('./src/WebTangle.js')
 const { log } = require('./src/Logger.js')
 const { getCurrentBalance, getCurrentIndex  } = require('./src/Database.js')
 
@@ -21,7 +21,7 @@ router.get('/', (req, res) => res.sendFile(path.join(__dirname + '/frontend/inde
 
 router.post('/orders', function (request, response) {
     log("New incoming order... generate new address.")
-    let address = getNewIotaAddress()
+    let address = handleOrder()
 
     // send reponse with address.
     response.send(address)
