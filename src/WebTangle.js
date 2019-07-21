@@ -17,6 +17,7 @@ const SEED = process.env.SEED;
 const NAME = process.env.NAME
 const VALUE = process.env.VALUE
 
+const { runPython } = require('./ScriptHandler.js')
 
 const zmq = require('zeromq')
 const sock = zmq.socket('sub')
@@ -47,7 +48,7 @@ const fetchAndBroadcastBalanceFrom = async function (address) {
             // ...
             let balance = balances[0]
             saveCurrentBalance(balance)
-            socketServer.emit('new_balance', { balance: balance});
+            socketServer.emit('new_balance', { balance: balance });
             let endTime = new Date();
             var timeDiff = endTime - startTime; //in ms
             // strip the ms
@@ -60,33 +61,6 @@ const fetchAndBroadcastBalanceFrom = async function (address) {
         .catch(err => {
             log("ERROR fetchAndBroadcastBalanceFrom: " + err)
         })
-    /**
-        let startTime = new Date();
-        iota.getAccountData(SEED, {
-            start: 0,
-            security: 2
-        })
-            .then(accountData => {
-                const { balance } = accountData
-                let object = {
-                    balance: balance
-                }
-                socketServer.emit('new_balance', object);
-                let endTime = new Date();
-                var timeDiff = endTime - startTime; //in ms
-                // strip the ms
-                timeDiff /= 1000;
-
-                // get seconds 
-                var seconds = Math.round(timeDiff);
-                log(`Time to fetch balance: ${seconds} seconds`)
-            })
-            .catch(err => {
-                log("get machine account data error: " + err)
-            })
-
-
-    */
 }
 
 const transferTokensTo = function (address) {
@@ -138,7 +112,7 @@ const transferTokensTo = function (address) {
                 status: "working",
                 message: 'Sent IOTA to the energy provider. I wait for energy now.'
             }
-            
+
             //socketServer.emit('status', data);
             logStatus(data)
             log(data.message);
@@ -159,26 +133,8 @@ var checkForBalanceUpdateOn = function (address) {
                 if (balances[0] && balances[0] >= should_balance) {
                     saveCurrentBalance(balances[0])
                     // Check, if machine has a provider
-                    if (PROVIDER_URL && PROVIDER_URL != "false") {
-                        // if yes - payout the provider
-                        payoutProvider()
-                        data = {
-                            status: "payout_provider",
-                            message: 'The payment was successful. I will pay my provider!'
-                        }
-                    } else {
-                        // if no, just start working
-                        data = {
-                            status: "working",
-                            message: 'The payment was successful. I will provide energy.!'
-                        }
-
-                    }
+                    handlePayout()
                     clearInterval(intervat);
-                    // send update to websocket channel.
-                    logStatus(data)
-                    //socketServer.emit('status', data);
-                    log(data.message);
                     counter = 0;
 
                 } else {
@@ -191,7 +147,7 @@ var checkForBalanceUpdateOn = function (address) {
                         // send update to websocket channel.
                         logStatus(data)
 
-//                        socketServer.emit('status', msg);
+                        //                        socketServer.emit('status', msg);
                         log(`Balance is ${balances[0]}, still waiting for confirmation.`)
                     }
                 }
@@ -209,6 +165,15 @@ var checkForBalanceUpdateOn = function (address) {
 const payoutProvider = function () {
 
     log("Payout provider: " + PROVIDER_URL)
+    let data = {
+        status: "payout_provider",
+        message: `Payout provider: ${PROVIDER_URL}`
+    }
+    // send update to websocket channel.
+    logStatus(data)
+    //socketServer.emit('status', data);
+    log(data.message);
+
     axios
         .post(PROVIDER_URL + "/orders/", {})
         .then(function (response) {
@@ -241,11 +206,49 @@ const watchAddressOnNode = function (address, checkBalance = true) {
             //socketServer.emit('status', msg);
             if (checkBalance) {
                 checkForBalanceUpdateOn(address)
+            } else {
+                handlePayout()
             }
         }
     })
 }
 
+
+const handleWork = function () {
+    // if no, just start working
+    let data = {
+        status: "working",
+        message: 'The transaction has been received. Working now!'
+    }
+    // send update to websocket channel.
+    logStatus(data)
+    //socketServer.emit('status', data);
+    log(data.message);
+
+    runPython().then((result) => {
+        console.log("result", result)
+        let data = {
+            status: "waiting_for_order",
+            message: 'Finished work! Waiting for new order.'
+        }
+        // send update to websocket channel.
+        logStatus(data)
+        //socketServer.emit('status', data);
+        log(data.message);
+    }, (error) => {
+        console.log("error", error)
+    });
+
+}
+
+const handlePayout = function () {
+    if (PROVIDER_URL && PROVIDER_URL != "false") {
+        // if yes - payout the provider
+        payoutProvider()
+    } else {
+        handleWork()
+    }
+}
 
 
 const handleOrder = function () {
@@ -258,9 +261,9 @@ const handleOrder = function () {
         status: "waiting_for_tx",
         message: `Thank you for the order. Please transfer ${VALUE} IOTA to this address.`
     }
-    // Watch for incoming address.
+    // Watch for incoming address if its not a zero value transaction.
     watchAddressOnNode(address, VALUE > 0 ? true : false);
-    
+
     // send message to "orders" channel.
     logStatus(data)
     //socketServer.emit('status', order);
