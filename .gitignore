@@ -6,4 +6,3 @@ node_modules
 .well-known/
 databases/*
 .DS_STORE
-dist/*

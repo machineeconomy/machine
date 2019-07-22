@@ -6,7 +6,7 @@ const runJavascript = function () {
 
         const js = require('../hello_scripts/hello_javascript.js');
 
-        resolve(js.hello_javascript())
+        resolve(js.run())
 
     });
 }

@@ -8,14 +8,13 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start-provider": "node -r dotenv/config server.js dotenv_config_path=.env_provider",
     "start-robot2": "node -r dotenv/config server.js dotenv_config_path=.env_robot2",
-    "start-provider2": "node -r dotenv/config server.js dotenv_config_path=.env_provider2",
-    "storybook": "start-storybook",
-    "build-components": "vue-cli-service build --target wc --name my-custom './frontend/components/*/*.vue'"
+    "start-provider2": "node -r dotenv/config server.js dotenv_config_path=.env_provider2"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@iota/core": "^1.0.0-beta.14",
+    "@iota/mam": "^0.7.3",
     "axios": "^0.19.0",
     "cors": "^2.8.5",
     "dotenv": "^8.0.0",
@@ -23,25 +22,12 @@
     "http": "0.0.0",
     "lowdb": "^1.0.0",
     "python-shell": "^1.0.7",
+    "sass-loader": "^7.1.0",
+    "shelljs": "^0.8.3",
     "socket.io": "^2.2.0",
     "zeromq": "^5.1.0"
   },
-  "devDependencies": {
-    "core-js": "^2.6.5",
-    "vue": "^2.6.5",
-    "@babel/core": "^7.4.5",
-    "@storybook/vue": "^5.1.9",
-    "@vue/cli-plugin-babel": "^3.8.0",
-    "@vue/cli-plugin-eslint": "^3.8.0",
-    "@vue/cli-service": "^3.8.0",
-    "babel-eslint": "^10.0.1",
-    "babel-loader": "^8.0.6",
-    "babel-preset-vue": "^2.0.2",
-    "eslint": "^5.16.0",
-    "eslint-plugin-vue": "^5.0.0",
-    "vue-loader": "^15.7.0",
-    "vue-template-compiler": "^2.6.10"
-  },
+  "devDependencies": {},
   "eslintConfig": {
     "root": true,
     "env": {
