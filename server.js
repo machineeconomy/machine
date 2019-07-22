@@ -6,6 +6,7 @@ const { router } = require('./src/WebServer.js')
 const { socketServer } = require('./src/WebSockets.js')
 const { fetchAndBroadcastBalanceFrom, handleOrder, getCurrentAddress } = require('./src/WebTangle.js')
 const { log } = require('./src/Logger.js')
+const { TLog } = require('./src/TangleLogger.js')
 const { runJavascript, runPython, runShell, runRust } = require('./src/ScriptHandler.js')
 const { getCurrentBalance, getCurrentIndex } = require('./src/Database.js')
 
@@ -19,6 +20,9 @@ router.get('/', (req, res) => res.sendFile(path.join(__dirname + '/frontend/inde
 router.post('/orders', function (request, response) {
     log("New incoming order... generate new address.")
     let address = handleOrder()
+
+    // Log it into MAM Channel
+    TLog("new order")
 
     // send reponse with address.
     response.send(address)
