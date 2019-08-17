@@ -1,6 +1,8 @@
 <template>
   <header class="header">
-    <img class="header--logo" src="@/assets/akita_logo.png" alt="Akita Logo" />
+    <div class="header--logo">
+      <img src="@/assets/akita_logo.png" alt="Akita Logo" />
+    </div>
     <div
       class="header--machine-name"
       :style="{'background-image': `url(${require('../assets/machine-name-box.svg')})`}"
@@ -29,12 +31,16 @@ export default {};
   border-top: var(--border);
   box-sizing: border-box;
   &--logo {
+    width: 100%;
+    padding-left: 25px;
+    img {
     height: 50px;
-    margin-left: 15px;
+
+    }
   }
   &--machine-name {
-    width: 600px;
-    height: 100px;
+    min-width: 600px;
+    height: 105px;
     background-size: contain;
     background-repeat: no-repeat;
     position: relative;
@@ -44,7 +50,10 @@ export default {};
     align-items: center;
   }
   &--menu {
+    width: 100%;
     padding-right: 25px;
+    display: flex;
+    justify-content: flex-end;
   }
 }
 
