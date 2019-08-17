@@ -39,9 +39,7 @@ body {
   height: 100vh;
   width: 100%;
   overflow: hidden;
-  * {
-    color: var(--white);
-  }
+  color: var(--white);
 }
 
 h1,
@@ -62,4 +60,27 @@ span {
   font-size: 16px;
   font-family: "Open Sans", sans-serif;
 }
+
+::-webkit-scrollbar {
+  width: 10px;
+  
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,.5); 
+}
+ 
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--primary); 
+  transition: var(--transition);
+  border-radius: 5px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--white); 
+}
+
 </style>

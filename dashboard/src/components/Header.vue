@@ -63,6 +63,7 @@ export default {};
   }
   span {
       font-family: "Oswald", sans-serif;
+      color: var(--white);
   }
   &:before,
   &:after {
