@@ -24,6 +24,9 @@ export default {
   --primary: #00b0f0;
   --light: #efefef;
   --white: #ffffff;
+
+  --border: 5px solid var(--primary);
+  --border_sm: 2px solid var(--primary);
 }
 
 body {
