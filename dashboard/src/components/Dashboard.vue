@@ -1,5 +1,8 @@
 <template>
-  <div class="dashboard">
+  <div
+    class="dashboard"
+    :style="{'background-image': `url(${require('../assets/bg.jpg')})`}"
+  >
     <Header />
     <Main />
     <Footer />
@@ -12,23 +15,26 @@ import Main from "./Main.vue";
 import Footer from "./Footer.vue";
 
 export default {
-  name: 'Dashboard',
+  name: "Dashboard",
   components: {
     Header,
     Main,
-Footer
+    Footer
   }
-}
+};
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-  .dashboard {
-    height: 100vh;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: stretch;
-  }
+.dashboard {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+}
 </style>
