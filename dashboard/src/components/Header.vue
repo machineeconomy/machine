@@ -30,6 +30,8 @@ export default {};
   align-items: center;
   border-top: var(--border);
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
   &--logo {
     width: 100%;
     padding-left: 25px;

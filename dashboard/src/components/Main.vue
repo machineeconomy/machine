@@ -1,8 +1,6 @@
 <template>
   <main class="main">
-      
     <div class="circle">
-     
       <div class="circle--inner"></div>
       <div class="circle--outer"></div>
       <div
@@ -16,10 +14,9 @@
         <span class="value">12.120.301</span>
         <span class="label">IOTA</span>
       </div>
-       <div class="wrap">
+      <div class="wrap">
         <div class="c" v-for="i in 100" :key="i"></div>
       </div>
-
     </div>
   </main>
 </template>
@@ -101,7 +98,7 @@ export default {};
   $base-hue: 180; // change for diff colors (180 is nice)
 
   .wrap {
-      position: absolute;
+    position: absolute;
     width: 0;
     height: 0;
     transform-style: preserve-3d;
@@ -150,6 +147,27 @@ export default {};
         transform: rotateZ(-$z) rotateY($y) translateX(($orb-size * 3))
           rotateZ($z); // translateX * 3
       }
+    }
+  }
+
+  $color: #00b0f0;
+
+  .circle--inner {
+    background-color: transparent;
+    min-width: 536px;
+    min-height: 536px;
+    border-radius: 50%;
+    animation: ripple 1.7s linear infinite;
+  }
+
+  @keyframes ripple {
+    0% {
+      box-shadow: 0 0 0 0 rgba($color, 0.1), 0 0 0 1em rgba($color, 0.1),
+        0 0 0 3em rgba($color, 0.1), 0 0 0 5em rgba($color, 0.1);
+    }
+    100% {
+      box-shadow: 0 0 0 1em rgba($color, 0.1), 0 0 0 3em rgba($color, 0.1),
+        0 0 0 5em rgba($color, 0.1), 0 0 0 8em rgba($color, 0);
     }
   }
 }
