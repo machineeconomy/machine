@@ -12,6 +12,7 @@ export default {
   components: {
     Dashboard
   }
+
 };
 </script>
 
@@ -27,6 +28,10 @@ export default {
 
   --border: 5px solid var(--primary);
   --border_sm: 2px solid var(--primary);
+
+  --transition: all 200ms ease-in-out;
+  --transition-cubic: all 500ms cubic-bezier(0.17, 0.67, 0.65, 1);
+  --transition-cubic_bounce: all 500ms cubic-bezier(0.17, 0.67, 0.65, 1.34);
 }
 
 body {

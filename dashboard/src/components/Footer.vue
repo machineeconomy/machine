@@ -1,5 +1,5 @@
 <template>
-  <footer class="footer">
+  <footer class="footer" v-bind:class="{ collapsed: collapsed }">
     <div class="panel">
       <div class="panel--title">
         <span>Log Title</span>
@@ -7,7 +7,7 @@
       <div class="panel--list">
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
       </div>
@@ -24,7 +24,7 @@
         <div class="panel--list">
           <div class="list-item">
             <span class="prefix">2019-08-17 19:52:37</span>
-            <span class="separator"> | </span>
+            <span class="separator">|</span>
             <span class="message">Database loaded. Current index: 35</span>
           </div>
         </div>
@@ -38,37 +38,37 @@
       <div class="panel--list">
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
         <div class="list-item">
           <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator"> | </span>
+          <span class="separator">|</span>
           <span class="message">Database loaded. Current index: 35</span>
         </div>
       </div>
@@ -77,7 +77,9 @@
 </template>
 
 <script>
-export default {};
+export default {
+  props: ["collapsed"]
+};
 </script>
 
 <style lang="scss">
@@ -86,8 +88,15 @@ export default {};
   border-top: var(--border);
   display: flex;
   justify-content: space-between;
-  position: relative;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
   background-color: var(--dark);
+  z-index: 3;
+  transition: var(--transition-cubic);
+  &.collapsed {
+    height: 500px;
+  }
   .info-wrapper {
     display: flex;
     min-width: 600px;
@@ -106,7 +115,7 @@ export default {};
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  
+
   span {
     font-size: 14px;
     color: var(--white);
@@ -115,14 +124,12 @@ export default {};
     background-color: rgba(0, 0, 0, 0.5);
     padding: 5px 10px;
     span {
-    font-family: "Oswald", sans-serif;
-    font-size: 12px;
-    font-weight: bold;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-
+      font-family: "Oswald", sans-serif;
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
-     
   }
   &--list {
     background-color: rgba(0, 0, 0, 0.25);
@@ -132,19 +139,16 @@ export default {};
     box-sizing: border-box;
     overflow-y: auto;
     ::-webkit-scrollbar {
-  width: 10px;
-}
-
+      width: 10px;
+    }
 
     .list-item {
-       
       .prefix {
         font-weight: bold;
         color: var(--primary);
-
       }
       .separator {
-          opacity: .5;
+        opacity: 0.5;
       }
       .message {
       }

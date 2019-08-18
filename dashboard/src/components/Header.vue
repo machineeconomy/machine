@@ -1,5 +1,5 @@
 <template>
-  <header class="header">
+  <header class="header" v-bind:class="{ collapsed: collapsed }">
     <div class="header--logo">
       <img src="@/assets/akita_logo.png" alt="Akita Logo" />
     </div>
@@ -19,7 +19,9 @@
 </template>
 
 <script>
-export default {};
+export default {
+  props: ["collapsed"]
+};
 </script>
 
 <style lang="scss">
@@ -30,14 +32,28 @@ export default {};
   align-items: center;
   border-top: var(--border);
   box-sizing: border-box;
-  position: relative;
+  position: fixed;
   z-index: 1;
+  transition: var(--transition-cubic);
+  width: 100%;
+  top: 0px;
+  &:before {
+    content: "";
+    position: absolute;
+    bottom: 100px;
+    width: 100%;
+    height: 300px;
+    background-color: var(--dark);
+    z-index: 5;
+  }
+  &.collapsed {
+    top: 300px;
+  }
   &--logo {
     width: 100%;
     padding-left: 25px;
     img {
-    height: 50px;
-
+      height: 50px;
     }
   }
   &--machine-name {
@@ -70,11 +86,11 @@ export default {};
   align-items: center;
   padding: 5px 15px;
   img {
-      margin-right: 8px;
+    margin-right: 8px;
   }
   span {
-      font-family: "Oswald", sans-serif;
-      color: var(--white);
+    font-family: "Oswald", sans-serif;
+    color: var(--white);
   }
   &:before,
   &:after {

@@ -1,5 +1,5 @@
 <template>
-  <main class="main">
+  <main class="main" v-bind:class="{ collapsed: collapsed }">
     <div class="circle">
       <div class="circle--inner"></div>
       <div class="circle--outer"></div>
@@ -22,16 +22,27 @@
 </template>
 
 <script>
-export default {};
+export default {
+  props: ["collapsed"]
+};
 </script>
 
 <style lang="scss">
 .main {
-  flex: 1;
   margin: 70px 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  height: calc(100vh - 535px);
+  transition: var(--transition-cubic);
+  margin-top: 160px;
+  &.collapsed {
+    height: 0;
+    .circle {
+      transform: scale(0);
+      opacity: 0;
+    }
+  }
   .circle {
     position: relative;
     height: 536px;
@@ -42,6 +53,9 @@ export default {};
     display: flex;
     justify-content: center;
     align-items: center;
+    transform: scale(0.75);
+    transition: var(--transition-cubic_bounce);
+    opacity: 1;
     &--inner {
       margin: 40px;
       height: calc(100% - 80px);
