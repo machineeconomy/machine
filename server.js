@@ -14,6 +14,10 @@ const NAME = process.env.NAME
 const IS_PROVIDER = process.env.IS_PROVIDER
 const PROVIDER_URL = process.env.PROVIDER_URL
 
+const swaggerUi = require('swagger-ui-express');
+const openApiDocumentation = require('./openApiDocumentation');
+
+router.use('/api', swaggerUi.serve, swaggerUi.setup(openApiDocumentation));
 
 router.get('/', (req, res) => res.sendFile(path.join(__dirname + '/frontend/index.html')));
 
