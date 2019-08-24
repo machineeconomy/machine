@@ -56,5 +56,6 @@ module.exports = {
     runJavascript,
     runPython,
     runShell,
-    runRust
+    runRust,
+    runCustomScript
 }
