@@ -17,7 +17,7 @@ const SEED = process.env.SEED;
 const NAME = process.env.NAME
 const VALUE = process.env.VALUE
 
-const { runPython } = require('./ScriptHandler.js')
+const { runPython, runCustomScript } = require('./ScriptHandler.js')
 
 const zmq = require('zeromq')
 const sock = zmq.socket('sub')
@@ -225,19 +225,41 @@ const handleWork = function () {
     //socketServer.emit('status', data);
     log(data.message);
 
-    runPython().then((result) => {
-        console.log("result", result)
-        let data = {
-            status: "waiting_for_order",
-            message: 'Finished work! Waiting for new order.'
-        }
-        // send update to websocket channel.
-        logStatus(data)
-        //socketServer.emit('status', data);
-        log(data.message);
-    }, (error) => {
-        console.log("error", error)
-    });
+    let customScript = true
+
+    if(!customScript) {
+
+        runPython().then((result) => {
+            console.log("result", result)
+            let data = {
+                status: "waiting_for_order",
+                message: 'Finished work! Waiting for new order.'
+            }
+            // send update to websocket channel.
+            logStatus(data)
+            //socketServer.emit('status', data);
+            log(data.message);
+        }, (error) => {
+            console.log("error", error)
+        });
+
+    } else {
+        runCustomScript().then((result) => {
+            console.log("result", result)
+            let data = {
+                status: "waiting_for_order",
+                message: 'Finished work! Waiting for new order.'
+            }
+            // send update to websocket channel.
+            logStatus(data)
+            //socketServer.emit('status', data);
+            log(data.message);
+        }, (error) => {
+            console.log("error", error)
+        });
+    }
+
+    
 
 }
 

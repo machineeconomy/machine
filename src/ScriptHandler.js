@@ -42,6 +42,16 @@ const runRust = function () {
     })
 }
 
+const runCustomScript = function () {
+    return new Promise((resolve, reject) => {
+
+        const js = require('../custom/index.js');
+
+        resolve(js.run())
+
+    });
+}
+
 module.exports = {
     runJavascript,
     runPython,

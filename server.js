@@ -3,6 +3,8 @@ dotenv.config();
 const path = require('path');
 
 const { router } = require('./src/WebServer.js')
+const { database } = require('./src/DatabaseHandler.js')
+const { createOrder, getOrderByUUID, getOrders } = require('./src/controllers/Orders.js')
 const { socketServer } = require('./src/WebSockets.js')
 const { fetchAndBroadcastBalanceFrom, handleOrder, getCurrentAddress } = require('./src/WebTangle.js')
 const { log } = require('./src/Logger.js')
@@ -23,13 +25,41 @@ router.get('/', (req, res) => res.sendFile(path.join(__dirname + '/frontend/inde
 
 router.post('/orders', function (request, response) {
     log("New incoming order... generate new address.")
+    var body = request.body
+    console.log("body: ", body)
+    
     let address = handleOrder()
+
+    let order = {
+        address: address,
+        data: JSON.stringify(request.body)  
+    }
+
+    createOrder(order)
+
 
     // Log it into MAM Channel
     TLog("new order")
 
     // send reponse with address.
     response.send(address)
+});
+
+router.get('/orders/:uuid', function (request, response) {
+    log("Get order")
+    console.log('Request Id:', request.params.uuid);
+    getOrderByUUID(request.params.uuid).then(order => {
+        console.log("show::order: ", order)
+        response.send(order)
+    })
+});
+
+router.get('/orders/', function (request, response) {
+    log("List all order")
+    getOrders().then(orders => {
+        console.log("index::orders: ", orders)
+        response.send(orders)
+    })
 });
 
 router.post('/hello_shell', function (request, response) {
