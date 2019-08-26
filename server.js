@@ -4,6 +4,8 @@ const path = require('path');
 
 const { router } = require('./src/WebServer.js')
 const { database } = require('./src/DatabaseHandler.js')
+const { initUpdate } = require('./src/UpdateHandler.js')
+initUpdate();
 const { createOrder, getOrderByUUID, getOrders } = require('./src/controllers/Orders.js')
 const { socketServer } = require('./src/WebSockets.js')
 const { fetchAndBroadcastBalanceFrom, handleOrder, getCurrentAddress } = require('./src/WebTangle.js')

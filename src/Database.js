@@ -41,7 +41,7 @@ const saveCurrentBalance = function(balance) {
         .write()
 }
 
-const getCurrentBalance = function (balance) {
+const getCurrentBalance = function () {
     return currentBalance
 }
 
