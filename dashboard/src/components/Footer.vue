@@ -25,55 +25,17 @@
     </div>
 
     <div class="panel">
-      <div class="panel--title">
-        <span>Log Title</span>
-      </div>
-      <div class="panel--list">
-        <div class="list-item">
-          <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator">|</span>
-          <span class="message">Database loaded. Current index: 35</span>
-        </div>
-        <div class="list-item">
-          <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator">|</span>
-          <span class="message">Database loaded. Current index: 35</span>
-        </div>
-        <div class="list-item">
-          <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator">|</span>
-          <span class="message">Database loaded. Current index: 35</span>
-        </div>
-        <div class="list-item">
-          <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator">|</span>
-          <span class="message">Database loaded. Current index: 35</span>
-        </div>
-        <div class="list-item">
-          <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator">|</span>
-          <span class="message">Database loaded. Current index: 35</span>
-        </div>
-        <div class="list-item">
-          <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator">|</span>
-          <span class="message">Database loaded. Current index: 35</span>
-        </div>
-        <div class="list-item">
-          <span class="prefix">2019-08-17 19:52:37</span>
-          <span class="separator">|</span>
-          <span class="message">Database loaded. Current index: 35</span>
-        </div>
-      </div>
+        <Orders />
     </div>
   </footer>
 </template>
 
 <script>
 import Activities from "./Activities.vue";
+import Orders from "./Orders.vue";
 export default {
   props: ["collapsed"],
-  components: { Activities }
+  components: { Activities, Orders }
 };
 </script>
 
