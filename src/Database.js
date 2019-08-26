@@ -7,7 +7,7 @@ const NAME = process.env.NAME
 
 const FileSync = require('lowdb/adapters/FileSync')
 
-const filename = "databases/db_" + NAME.replace(/ /g, "") + '.json'
+const filename = "db_" + NAME.replace(/ /g, "") + '.json'
 
 const adapter = new FileSync(filename)
 const db = low(adapter)
