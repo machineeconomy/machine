@@ -11,7 +11,7 @@
       </div>
       <div class="circle--info-box">
         <span class="label">Balance</span>
-        <span class="value">12.120.301</span>
+        <span class="value">{{balance}}</span>
         <span class="label">IOTA</span>
       </div>
       <div class="wrap">
@@ -22,8 +22,39 @@
 </template>
 
 <script>
+const axios = require("axios");
 export default {
-  props: ["collapsed"]
+  props: ["collapsed"],
+  data() {
+    return {
+      balance: null,
+      polling: null
+    };
+  },
+  created() {
+    this.fetchBalance();
+  },
+  beforeDestroy() {
+    clearInterval(this.polling);
+  },
+  methods: {
+    fetchBalance() {
+      let self = this;
+      this.polling = setInterval(function run() {
+        console.log("Pull Data.");
+        axios
+          .get("http://localhost:3001/get_account_data")
+          .then(function(response) {
+            console.log(response);
+            self.balance = response.data.balance;
+          })
+          .catch(function(error) {
+            console.log(error);
+            self.balance = "error";
+          });
+      }(), 10000 );
+    }
+  }
 };
 </script>
 
