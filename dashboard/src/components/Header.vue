@@ -7,7 +7,7 @@
       class="header--machine-name"
       :style="{'background-image': `url(${require('../assets/machine-name-box.svg')})`}"
     >
-      <h1>robot_1</h1>
+      <h1>{{$store.getters.name}}</h1>
     </div>
     <div class="header--menu">
       <button class="btn btn-primary">

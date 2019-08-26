@@ -43,8 +43,9 @@ export default {
         self.mutableName = msg.name;
         self.status = msg.status;
         self.connected = true;
+        self.$store.commit('SetName', msg.name);
         self.$store.commit('AddActivity', {
-          message: `Machine '${self.name}': ${msg.message}`,
+          message: `Machine '${msg.name}': ${msg.message}`,
           timestamp: Date.now()
         })
         

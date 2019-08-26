@@ -9,13 +9,16 @@
     >
       <div class="panel">
         <div class="panel--title">
-          <span>Log Title</span>
+          <span>Machine Info</span>
         </div>
         <div class="panel--list">
           <div class="list-item">
-            <span class="prefix">2019-08-17 19:52:37</span>
-            <span class="separator">|</span>
-            <span class="message">Database loaded. Current index: 35</span>
+            <span class="prefix">Name:</span>
+            <span class="message">{{$store.getters.name}}</span>
+          </div>
+          <div class="list-item">
+            <span class="prefix">Version:</span>
+            <span class="message">0.0.1</span>
           </div>
         </div>
       </div>
