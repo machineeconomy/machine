@@ -14,7 +14,8 @@ app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
     extended: true
 }));    
 
-app.use('/dist', express.static('dist'))
+//app.use('/dist', express.static('/dashboard/dist'))
+app.use('/', express.static('dashboard/dist'));
 
 let server;
 

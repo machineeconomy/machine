@@ -34,7 +34,6 @@ require('./custom/index.js');
 
 router.use('/api', swaggerUi.serve, swaggerUi.setup(openApiDocumentation));
 
-router.get('/', (req, res) => res.sendFile(path.join(__dirname + '/frontend/index.html')));
 
 router.post('/orders', function (request, response) {
     log("New incoming order... generate new address.")
