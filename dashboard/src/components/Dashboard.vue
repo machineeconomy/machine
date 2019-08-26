@@ -15,6 +15,8 @@ import Header from "./Header.vue";
 import Main from "./Main.vue";
 import Footer from "./Footer.vue";
 
+import io from "socket.io-client";
+
 export default {
   name: "Dashboard",
   components: {
@@ -24,7 +26,43 @@ export default {
   },
   data() {
     return {
-      collapsed: false
+      collapsed: false,
+
+      status: "",
+      balance: "",
+      connected: false,
+      mutableName: this.name,
+      messages: []
+    }
+  },
+  created() {
+    var socket = io("http://localhost:3001", { path: "/socket", secure: true });
+    if (socket) {
+      var self = this;
+      socket.on("init", function(msg) {
+        self.mutableName = msg.name;
+        self.status = msg.status;
+        self.connected = true;
+        self.messages.push({
+          message: `Machine '${self.name}' connected.`,
+          timestamp: Date.now()
+        })
+        
+      });
+
+      socket.on("status", function(msg) {
+        console.log("ws: tx_confirmed", msg);
+        self.status = msg.status;
+        self.messages.push({
+          message: `Machine '${self.name}': ${msg.message}`,
+          timestamp: Date.now()
+        })
+      });
+
+      socket.on("new_balance", function(msg) {
+        console.log("ws: new_balance", msg);
+        self.balance = msg.balance.toString();
+      });
     }
   },
   methods: {
