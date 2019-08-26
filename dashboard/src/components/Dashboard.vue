@@ -31,7 +31,7 @@ export default {
       status: "",
       balance: "",
       connected: false,
-      mutableName: this.name,
+      name: "",
       messages: []
     }
   },
@@ -40,7 +40,8 @@ export default {
     if (socket) {
       var self = this;
       socket.on("init", function(msg) {
-        self.mutableName = msg.name;
+        console.log(msg)
+        self.name = msg.name;
         self.status = msg.status;
         self.connected = true;
         self.$store.commit('SetName', msg.name);
