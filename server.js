@@ -19,6 +19,17 @@ const PROVIDER_URL = process.env.PROVIDER_URL
 const swaggerUi = require('swagger-ui-express');
 const openApiDocumentation = require('./openApiDocumentation');
 
+const iotaCore = require('@iota/core')
+
+// Local node to connect to;
+const provider = 'https://nodes.devnet.thetangle.org:443';
+
+const iota = iotaCore.composeAPI({
+    provider: provider
+})
+
+require('./custom/index.js');
+
 router.use('/api', swaggerUi.serve, swaggerUi.setup(openApiDocumentation));
 
 router.get('/', (req, res) => res.sendFile(path.join(__dirname + '/frontend/index.html')));
@@ -60,6 +71,21 @@ router.get('/orders/', function (request, response) {
         console.log("index::orders: ", orders)
         response.send(orders)
     })
+});
+
+router.get('/get_account_data/', function (request, response) {
+    iota.getAccountData(process.env.SEED, {
+        start: 0,
+        security: 2
+    })
+        .then(accountData => {
+            const { addresses, inputs, transactions, balance } = accountData
+            // ...
+            response.send(accountData)
+        })
+        .catch(err => {
+            // ...
+        })
 });
 
 router.post('/hello_shell', function (request, response) {
