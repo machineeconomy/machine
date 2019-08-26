@@ -43,8 +43,8 @@ export default {
         self.mutableName = msg.name;
         self.status = msg.status;
         self.connected = true;
-        self.messages.push({
-          message: `Machine '${self.name}' connected.`,
+        self.$store.commit('AddActivity', {
+          message: `Machine '${self.name}': ${msg.message}`,
           timestamp: Date.now()
         })
         
@@ -53,7 +53,7 @@ export default {
       socket.on("status", function(msg) {
         console.log("ws: tx_confirmed", msg);
         self.status = msg.status;
-        self.messages.push({
+        self.$store.commit('AddActivity', {
           message: `Machine '${self.name}': ${msg.message}`,
           timestamp: Date.now()
         })
