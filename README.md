@@ -1,16 +1,10 @@
-# machine
-This repository contains the code to setup an IOTA wallet and have some extra communitcation functions via websockets. 
+# IOTA Tangle Payment Module
 
-The code can deployed via docker on a machine, to enable easy machine2machine micro and macro payments. 
+This repository contains all functions to make payments with IOTA. This module is a microervice, which handles payments automaticly and provides different channels for communication. Wir features like MAM logging and watching live transaction, this is the perfect start to work with the tangle.  
 
-For demonstratiosn purposes, we setup a docker-compose file, to compose four example machines.
 
-- Machine 1 - A robot
-- Machine 2 - Wind energy provider
-- Machine 3 - A second robot
-- Machine 4 - Solar energy provider
+[THere is an live demonstration](https://m2m.akitablock.io/) of this module.  
 
-[This demonstration](https://machineeconomy.github.io/m2m.akitablock.io/) shows, how a user can send iota devnet tokens to one of the robots, to manufacture a new product. The robot will automatically pay an energy provider after an order.
 
 ## Setup and run
 
@@ -21,30 +15,54 @@ You have to install [Docker](https://www.docker.com).
 ```bash
 git clone https://github.com/machineeconomy/machine
 cd machine
-docker-compose up
+npm install
+npm start
 ```
 
 ## Architecture
 
-This service provides an iota wallet for a machine. It can be configured via environment variables.
+This module provides an IOTA wallet, Logging services and order management. 
+
+Everything can be configured via environment variables.
 
 ### Environment Variables
 
 | Variable   |      Example      |  Description |
 |----------|:-------------:|------:|
-| PORT |    3000   |  application port |
-| NAME |  robot 1 | the name of the service |
-| SEED |    AVL...RFS   |  81 trytes long iota seed for the wallet |
+| PORT |    3000   |  application port. |
+| NAME |  robot 1 | the name of the service. |
+| SEED |    AVL...RFS   |  81 trytes long iota seed for the wallet. |
+| IS_PROVIDER |    true/false   |  Defines to module as provider. |
+| PROVIDER_URL |    http://localhost:3002   |  Provider URl. |
+| VALUE |    1337   |  Defines the cost of an order. |
+| CUSTOM_SCRIPT |    true/false   |  Runs custom script after payment. |
+| DEVELOPMENT |    true/false   |  Defines the module mode. |
+
+#### Default .env File
+```bash
+PORT=3001
+NAME=dev robot 1	
+SEED=AAAAAAVTYWSUOLUWJTRYYPOIGF9KHFRVAZKAUHXKVHPOZJJZ9ELIPIEPPIIMTXIMMKQSHAAAAAAAAAAAA
+IS_PROVIDER=false
+PROVIDER_URL=http://localhost:3002
+VALUE=0
+CUSTOM_SCRIPT=true
+DEVELOPMENT=true
+```
+
 
 
 ### Webserver
 
 The service provide some endpoints to get information about the state of the service.
 
-
-| PATH   |      Example      |  Description |
-|----------|:-------------:|------:|
-| / |    http://localhost:3000/   | show current service name |
+| PATH   |  Method  |     Example      |  Description |
+|----------|:-----|:--------:|------:|
+| / |  GET  |    http://localhost:3000/   | show module dashboard |
+| /orders | GET  |    http://localhost:3000/orders   | get a list of all orders |
+| /orders | POST  |    http://localhost:3000/orders   | create a new order, returns an addresss |
+| /orders/:uuid | GET  |    http://localhost:3000/orders/abc-123-efg   | get order details about the order with given id |
+| /get_account_data | GET  |    http://localhost:3000/get_account_data   | get IOTA account data from the module 
 
 
 ### Websockets
@@ -56,7 +74,7 @@ When a new user connect to the ws server, the service emits a message with the n
 The service listens to the `order` channel, for incoming orders through the user application. 
 
 
-### machine status
+### module status
 
 
 |  Status   | Description |
