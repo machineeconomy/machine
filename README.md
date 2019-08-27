@@ -26,7 +26,7 @@ docker-compose up
 
 ## Architecture
 
-This service provides an iota wallet for an machine. It can be configured via enviroment variables.
+This service provides an iota wallet for a machine. It can be configured via environment variables.
 
 ### Environment Variables
 
@@ -51,7 +51,7 @@ The service provide some endpoints to get information about the state of the ser
 
 The sevice also provides a websocket connection. It runs also on the same PORT like the webserver under path `/sockets`.
 
-When a new usser connect to the ws server, the service emits a message with the name and status of the machine in the `welcome` channel.
+When a new user connect to the ws server, the service emits a message with the name and status of the machine in the `welcome` channel.
 
 The service listens to the `order` channel, for incoming orders through the user application. 
 
@@ -63,7 +63,7 @@ The service listens to the `order` channel, for incoming orders through the user
 |-----------|-------------|
 |  booting  | machine starts up. |
 |  waiting_for_order  | machine wait for an incoming order. |
-|  waiting_for_tx  | machine waits for incoming transaction to the iri via ZQM messages. |
-|  waiting_for_tx_confirm  | machine waits for incoming transaction to be valid. |
+|  waiting_for_tx  | machine waits for incoming transaction to IRI via ZMQ messages. |
+|  waiting_for_tx_confirm  | machine waits for incoming transaction to be confirmed. |
 |  payout_provider  | machine pays the provider |
 |  working  | machine is working |
